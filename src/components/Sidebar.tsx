@@ -13,10 +13,17 @@ import {
   BookOpen,
   Wifi,
   WifiOff,
-  ChevronRight,
+  X,
 } from 'lucide-react';
+import { novoraApi } from '@/lib/api';
 
-export type ActiveTab = 'overview' | 'evaluations' | 'scenarios' | 'integrations' | 'settings';
+export type ActiveTab =
+  | 'overview'
+  | 'evaluations'
+  | 'scenarios'
+  | 'integrations'
+  | 'knowledge'
+  | 'settings';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -25,6 +32,23 @@ interface SidebarProps {
   isOpenMobile: boolean;
   onCloseMobile: () => void;
 }
+
+const NAV_ITEMS = [
+  { id: 'overview' as ActiveTab, label: 'Overview', icon: LayoutDashboard },
+  { id: 'evaluations' as ActiveTab, label: 'Evaluations', icon: ClipboardCheck },
+  { id: 'scenarios' as ActiveTab, label: 'Test Cases', icon: FlaskConical },
+  { id: 'integrations' as ActiveTab, label: 'Integrations', icon: Puzzle },
+  { id: 'knowledge' as ActiveTab, label: 'Knowledge', icon: BookOpen },
+  { id: 'settings' as ActiveTab, label: 'Settings', icon: Settings },
+];
+
+const PLANNED_ITEMS = [
+  {
+    label: 'Agents (Voxia)',
+    icon: Bot,
+    tooltip: 'Runtime orchestration deferred to Milestone 2',
+  },
+];
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
@@ -35,57 +59,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const navItems = [
-    {
-      id: 'overview' as ActiveTab,
-      label: 'Overview',
-      icon: LayoutDashboard,
-      badge: null,
-      enabled: true,
-    },
-    {
-      id: 'evaluations' as ActiveTab,
-      label: 'Evaluations',
-      icon: ClipboardCheck,
-      badge: null,
-      enabled: true,
-    },
-    {
-      id: 'scenarios' as ActiveTab,
-      label: 'Test Cases',
-      icon: FlaskConical,
-      badge: null,
-      enabled: true,
-    },
-    {
-      id: 'integrations' as ActiveTab,
-      label: 'Integrations',
-      icon: Puzzle,
-      badge: '3 Active',
-      enabled: true,
-    },
-    {
-      id: 'settings' as ActiveTab,
-      label: 'Settings',
-      icon: Settings,
-      badge: null,
-      enabled: true,
-    },
-  ];
-
-  const plannedItems = [
-    {
-      label: 'Agents (Voxia)',
-      icon: Bot,
-      tooltip: 'Runtime orchestration deferred to Milestone 2',
-    },
-    {
-      label: 'Knowledge',
-      icon: BookOpen,
-      tooltip: 'RAG connectors deferred to Phase 2',
-    },
-  ];
-
   const handleSelect = (tab: ActiveTab) => {
     onTabChange(tab);
     onCloseMobile();
@@ -93,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile overlay */}
       {isOpenMobile && (
         <div
           onClick={onCloseMobile}
@@ -103,103 +76,116 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 flex-col border-r transition-transform duration-300 lg:static lg:translate-x-0 ${
-          isOpenMobile ? 'translate-x-0' : '-translate-x-100 lg:translate-x-0'
+        className={`fixed top-0 bottom-0 left-0 z-50 flex w-56 flex-col border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 bg-transparent backdrop-blur-2xl ${
+          isOpenMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
         style={{
-          backgroundColor: 'var(--bg-surface)',
+          // backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-color)',
         }}
       >
-        {/* Brand Header */}
+        {/* ── Brand Header ── */}
         <div
-          className="flex h-20 items-center justify-between border-b px-6"
+          className="flex h-16 items-center justify-between border-b px-5"
           style={{ borderColor: 'var(--border-color)' }}
         >
-          <div className="flex items-center gap-3">
-            <div className="relative h-10 w-36 overflow-hidden">
+          <div className="flex items-center gap-2.5">
+            <div className="relative h-9 w-32">
               <Image
                 src={theme === 'dark' ? '/novora-logo-dark.png' : '/novora-logo-light.png'}
                 alt="Novora Logo"
                 fill
                 priority
-                sizes="144px"
+                sizes="128px"
                 className="object-contain object-left"
               />
             </div>
           </div>
-          <span
-            className="rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase"
-            style={{
-              backgroundColor: 'var(--primary-subtle)',
-              color: 'var(--primary)',
-            }}
-          >
-            v0.1
-          </span>
+
+          <div className="flex items-center gap-2">
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase"
+              style={{
+                backgroundColor: 'var(--primary-subtle)',
+                color: 'var(--primary)',
+              }}
+            >
+              v0.1
+            </span>
+            {/* Close button — mobile only */}
+            <button
+              onClick={onCloseMobile}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] transition-colors lg:hidden"
+              aria-label="Close sidebar"
+            >
+              <X size={15} />
+            </button>
+          </div>
         </div>
 
-        {/* Navigation Section */}
-        <div className="flex-1 overflow-y-auto px-4 py-6">
-          <div className="mb-2 px-3 text-[11px] font-bold tracking-wider text-[var(--text-muted)] uppercase">
+        {/* ── Nav section ── */}
+        <div className="flex-1 overflow-y-auto px-3 py-5">
+          <div className="mb-2 px-2 text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
             Platform
           </div>
-          <nav className="space-y-1.5">
-            {navItems.map((item) => {
+          <nav className="space-y-0.5">
+            {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => handleSelect(item.id)}
-                  className={`group flex w-full items-center justify-between rounded-lg px-3.5 py-2.5 text-sm font-medium transition-all ${
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                     isActive
-                      ? 'bg-[var(--primary)] text-white shadow-sm'
+                      ? 'text-white shadow-sm'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]'
                   }`}
+                  style={
+                    isActive
+                      ? {
+                          background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
+                        }
+                      : {}
+                  }
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      size={18}
-                      className={isActive ? 'text-white' : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'}
-                    />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge && (
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
-                        isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)]'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
+                  <Icon
+                    size={17}
+                    className={
+                      isActive
+                        ? 'text-white'
+                        : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors'
+                    }
+                  />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          {/* Planned / Roadmap Section */}
-          <div className="mt-8 mb-2 px-3 text-[11px] font-bold tracking-wider text-[var(--text-muted)] uppercase">
-            Roadmap (Future)
+          {/* Roadmap section */}
+          <div className="mt-6 mb-2 px-2 text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+            Roadmap
           </div>
-          <div className="space-y-1">
-            {plannedItems.map((item, idx) => {
+          <div className="space-y-0.5">
+            {PLANNED_ITEMS.map((item, idx) => {
               const Icon = item.icon;
               return (
                 <div
                   key={idx}
                   title={item.tooltip}
-                  className="flex items-center justify-between rounded-lg px-3.5 py-2 text-sm text-[var(--text-muted)] opacity-60 cursor-not-allowed select-none"
+                  className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm text-[var(--text-muted)] opacity-90 cursor-not-allowed select-none"
                 >
                   <div className="flex items-center gap-3">
-                    <Icon size={18} />
+                    <Icon size={17} />
                     <span>{item.label}</span>
                   </div>
-                  <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded border border-[var(--border-color)]">
-                    Planned
+                  <span
+                    className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border"
+                    style={{ borderColor: 'var(--border-color)' }}
+                  >
+                    Soon
                   </span>
                 </div>
               );
@@ -207,31 +193,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Backend Connectivity Status Footer */}
-        <div
-          className="border-t p-4"
-          style={{ borderColor: 'var(--border-color)' }}
-        >
+        {/* ── Backend connectivity footer ── */}
+        <div className="border-t p-3" style={{ borderColor: 'var(--border-color)' }}>
           <div
-            className="flex items-center justify-between rounded-lg p-3 text-xs"
+            className="flex items-center justify-between rounded-xl p-3 text-xs"
             style={{ backgroundColor: 'var(--bg-elevated)' }}
           >
             <div className="flex items-center gap-2.5">
-              <span className="relative flex h-2.5 w-2.5">
+              {/* Animated status dot */}
+              <span className="relative flex h-2 w-2">
                 {isBackendConnected ? (
                   <>
                     <span
-                      className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
+                      className="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping"
                       style={{ backgroundColor: 'var(--status-success)' }}
                     />
                     <span
-                      className="relative inline-flex h-2.5 w-2.5 rounded-full"
+                      className="relative inline-flex h-2 w-2 rounded-full"
                       style={{ backgroundColor: 'var(--status-success)' }}
                     />
                   </>
                 ) : (
                   <span
-                    className="relative inline-flex h-2.5 w-2.5 rounded-full"
+                    className="relative inline-flex h-2 w-2 rounded-full"
                     style={{ backgroundColor: 'var(--status-warning)' }}
                   />
                 )}
@@ -240,15 +224,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="font-semibold text-[var(--text-primary)]">
                   {isBackendConnected ? 'Backend Connected' : 'Local Fallback'}
                 </div>
-                <div className="text-[10px] text-[var(--text-muted)] font-mono">
-                  {isBackendConnected ? 'FastAPI :8000' : 'Offline / Mock'}
+                <div
+                  className="max-w-[148px] truncate text-[10px] text-[var(--text-muted)] font-mono"
+                  title={isBackendConnected ? novoraApi.getBaseUrl() : undefined}
+                >
+                  {isBackendConnected ? novoraApi.getBaseUrl() : 'Offline / Mock Data'}
                 </div>
               </div>
             </div>
             {isBackendConnected ? (
-              <Wifi size={15} style={{ color: 'var(--status-success)' }} />
+              <Wifi size={14} style={{ color: 'var(--status-success)' }} />
             ) : (
-              <WifiOff size={15} style={{ color: 'var(--status-warning)' }} />
+              <WifiOff size={14} style={{ color: 'var(--status-warning)' }} />
             )}
           </div>
         </div>

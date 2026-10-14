@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar, ActiveTab } from '@/components/Sidebar';
 import { Navbar } from '@/components/Navbar';
 import { OverviewView } from '@/components/views/OverviewView';
 import { EvaluationsView } from '@/components/views/EvaluationsView';
 import { ScenariosView } from '@/components/views/ScenariosView';
 import { IntegrationsView } from '@/components/views/IntegrationsView';
+import { KnowledgeView } from '@/components/views/KnowledgeView';
 import { SettingsView } from '@/components/views/SettingsView';
 
-import { EvaluationReport, EvaluationScenario } from '@/types/api';
-import { novoraApi } from '@/lib/api';
+import { type AuthUser, EvaluationReport, EvaluationScenario } from '@/types/api';
+import { ApiError, novoraApi } from '@/lib/api';
 import { SEED_SCENARIOS, SEED_EVALUATIONS } from '@/lib/mockData';
 
 import { EvaluationDetailModal } from '@/components/evaluations/EvaluationDetailModal';
@@ -21,6 +23,7 @@ import { RegressionDiffModal } from '@/components/evaluations/RegressionDiffModa
 import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -29,6 +32,10 @@ export default function DashboardPage() {
   const [evaluations, setEvaluations] = useState<EvaluationReport[]>([]);
   const [isBackendConnected, setIsBackendConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [sessionCheckAttempt, setSessionCheckAttempt] = useState(0);
 
   // Modals
   const [selectedEvaluation, setSelectedEvaluation] = useState<EvaluationReport | null>(null);
@@ -67,7 +74,7 @@ export default function DashboardPage() {
 
           // Fetch all evaluations across scenarios
           const evalPromises = fetchedScenarios.map((s) =>
-            novoraApi.listEvaluations(s.id).catch(() => [] as EvaluationReport[])
+            novoraApi.listEvaluations(s.id)
           );
           const allEvalLists = await Promise.all(evalPromises);
           const flatEvals = allEvalLists.flat();
@@ -98,8 +105,32 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled = false;
+
+    const verifySession = async () => {
+      try {
+        const user = await novoraApi.getCurrentUser();
+        if (cancelled) return;
+        setCurrentUser(user);
+        setAuthError(null);
+        await loadData();
+      } catch (err: unknown) {
+        if (cancelled) return;
+        if (err instanceof ApiError && err.status === 401) {
+          router.replace('/login');
+        } else {
+          setAuthError(err instanceof Error ? err.message : 'Unable to verify your session.');
+        }
+      } finally {
+        if (!cancelled) setAuthChecked(true);
+      }
+    };
+
+    void verifySession();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadData, router, sessionCheckAttempt]);
 
   // Handlers
   const handleEvaluationCreated = (report: EvaluationReport) => {
@@ -118,12 +149,73 @@ export default function DashboardPage() {
     setIsCompareOpen(true);
   };
 
+  const [initialEvaluationScenarioId, setInitialEvaluationScenarioId] = useState<string | undefined>();
+
   const handleRunScenario = (scenarioId: string) => {
+    setInitialEvaluationScenarioId(scenarioId);
     setIsNewEvaluationOpen(true);
   };
 
+  const handleLogout = async () => {
+    try {
+      await novoraApi.logout();
+      router.replace('/login');
+      router.refresh();
+    } catch (err: unknown) {
+      showToast(
+        `Could not sign out: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        'error'
+      );
+    }
+  };
+
+  if (!authChecked || !currentUser) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] p-6">
+        <div className="max-w-md text-center">
+          {authError ? (
+            <>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                Could not verify your Novora session.
+              </p>
+              <p className="mt-2 break-words text-xs text-[var(--text-muted)]">
+                {authError}
+              </p>
+              <button
+                onClick={() => {
+                  setAuthChecked(false);
+                  setAuthError(null);
+                  setSessionCheckAttempt((attempt) => attempt + 1);
+                }}
+                className="mt-5 rounded-lg px-4 py-2 text-xs font-bold text-white"
+                style={{ backgroundColor: 'var(--primary)' }}
+              >
+                Retry
+              </button>
+            </>
+          ) : (
+            <p className="text-sm font-medium text-[var(--text-muted)]">
+              {authChecked ? 'Redirecting to sign in...' : 'Verifying your session...'}
+            </p>
+          )}
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen">
+    <div className="relative isolate min-h-screen">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+      >
+        <div className="novora-orb novora-orb-1" />
+        <div className="novora-orb novora-orb-2" />
+        <div className="novora-orb novora-orb-3" />
+        <div className="novora-grid-bg" />
+      </div>
+
+      <div className="relative z-10 flex min-h-screen">
       {/* Toast Notification */}
       {toast && (
         <div
@@ -168,6 +260,8 @@ export default function DashboardPage() {
           onNewEvaluation={() => setIsNewEvaluationOpen(true)}
           onNewScenario={() => setIsNewScenarioOpen(true)}
           onRefresh={loadData}
+          onLogout={handleLogout}
+          currentUser={currentUser}
           isLoading={isLoading}
         />
 
@@ -235,6 +329,10 @@ export default function DashboardPage() {
             />
           )}
 
+          {activeTab === 'knowledge' && (
+            <KnowledgeView />
+          )}
+
           {activeTab === 'settings' && (
             <SettingsView
               isBackendConnected={isBackendConnected}
@@ -259,6 +357,7 @@ export default function DashboardPage() {
           scenarios={scenarios}
           onClose={() => setIsNewEvaluationOpen(false)}
           onEvaluationCreated={handleEvaluationCreated}
+          initialScenarioId={initialEvaluationScenarioId}
         />
       )}
 
@@ -276,6 +375,7 @@ export default function DashboardPage() {
           onClose={() => setIsCompareOpen(false)}
         />
       )}
+      </div>
     </div>
   );
 }

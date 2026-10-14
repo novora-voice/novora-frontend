@@ -69,7 +69,28 @@ The dashboard implements Novora's official design system:
 - **Framework**: Next.js 16 (Turbopack, App Router)
 - **Language**: TypeScript 5
 - **UI & Styling**: React 19, Tailwind CSS v4, Lucide React
-- **Client Resilience**: Typed API client (`src/lib/api.ts`) with automatic fallback to offline seed fixtures (`src/lib/mockData.ts`) when backend is unreachable.
+- **Client Resilience**: Typed API client (`src/lib/api.ts`) with clear backend errors and a same-origin Next.js API proxy.
+
+## 🔌 Backend Connection
+
+The Next.js server proxies dashboard API calls to the FastAPI backend at
+`http://localhost:8000` by default, so the browser does not need cross-origin
+access to the backend. Set `NEXT_PUBLIC_API_URL` before starting or building
+the frontend to use a different backend origin:
+
+```dotenv
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+For local development, start the backend from `backend/` with
+`python -m uvicorn novora.api.main:app --reload --port 8000`, then start the
+frontend with `npm run dev` from `frontend/`. Provider webhook URLs shown in
+Integrations point directly at the configured backend origin.
+
+The login and signup pages use the backend's email/password endpoints. A
+successful signup or login establishes an HTTP-only session cookie; the
+dashboard checks that session on entry and protects it with a sign-out action.
+Accounts currently share the team's Novora workspace.
 
 ---
 

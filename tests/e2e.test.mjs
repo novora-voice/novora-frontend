@@ -1,7 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = process.env.NOVORA_API_BASE_URL || 'http://127.0.0.1:8000';
+let sessionCookie = '';
+
+async function apiFetch(path, options = {}) {
+  const headers = new Headers(options.headers);
+  if (sessionCookie) headers.set('Cookie', sessionCookie);
+  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const setCookie = response.headers.get('set-cookie');
+  if (setCookie) sessionCookie = setCookie.split(';', 1)[0];
+  return response;
+}
+
+test('End-to-End: Signup and session authentication', async () => {
+  const response = await apiFetch('/api/v1/auth/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      full_name: 'Frontend E2E User',
+      email: `frontend-e2e-${Date.now()}@example.com`,
+      password: 'correct-horse-battery',
+    }),
+  });
+  assert.equal(response.status, 201);
+  assert.ok(sessionCookie.startsWith('novora_session='));
+  assert.match(response.headers.get('set-cookie'), /httponly/i);
+
+  const currentUser = await apiFetch('/api/v1/auth/me');
+  assert.equal(currentUser.status, 200);
+  assert.equal((await currentUser.json()).full_name, 'Frontend E2E User');
+});
 
 test('End-to-End: Health Check', async () => {
   const res = await fetch(`${API_BASE}/health`);
@@ -31,7 +60,7 @@ test('End-to-End: Scenario Creation & Ingestion & Evaluation', async () => {
     ],
   };
 
-  const scenRes = await fetch(`${API_BASE}/api/v1/scenarios`, {
+  const scenRes = await apiFetch('/api/v1/scenarios', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(scenarioPayload),
@@ -42,7 +71,7 @@ test('End-to-End: Scenario Creation & Ingestion & Evaluation', async () => {
   assert.equal(scenario.name, 'Discretionary Refund Policy Check');
 
   // 2. Import dialogue transcript
-  const importRes = await fetch(`${API_BASE}/api/v1/conversations/import-transcript`, {
+  const importRes = await apiFetch('/api/v1/conversations/import-transcript', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -57,7 +86,7 @@ test('End-to-End: Scenario Creation & Ingestion & Evaluation', async () => {
   assert.equal(conversation.messages.length, 2);
 
   // 3. Evaluate conversation against scenario
-  const evalRes = await fetch(`${API_BASE}/api/v1/evaluations`, {
+  const evalRes = await apiFetch('/api/v1/evaluations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -74,7 +103,7 @@ test('End-to-End: Scenario Creation & Ingestion & Evaluation', async () => {
   assert.equal(report.rule_results[1].status, 'PASS');
 
   // 4. Retrieve scenario evaluation history
-  const historyRes = await fetch(`${API_BASE}/api/v1/scenarios/${scenario.id}/history`);
+  const historyRes = await apiFetch(`/api/v1/scenarios/${scenario.id}/history`);
   assert.equal(historyRes.status, 200);
   const history = await historyRes.json();
   assert.ok(history.length >= 1);

@@ -49,8 +49,10 @@ test('Evaluation Statuses & Deterministic Rule Types', () => {
   const validRuleTypes = [
     'required_information',
     'policy_compliance',
-    'forbidden_promises',
-    'external_action_verification',
+    'required_steps',
+    'prohibited_claims',
+    'unsupported_completion',
+    'unresolved_work',
   ];
 
   assert.ok(validStatuses.includes('PASS'));
@@ -59,8 +61,10 @@ test('Evaluation Statuses & Deterministic Rule Types', () => {
 
   assert.ok(validRuleTypes.includes('required_information'));
   assert.ok(validRuleTypes.includes('policy_compliance'));
-  assert.ok(validRuleTypes.includes('forbidden_promises'));
-  assert.ok(validRuleTypes.includes('external_action_verification'));
+  assert.ok(validRuleTypes.includes('required_steps'));
+  assert.ok(validRuleTypes.includes('prohibited_claims'));
+  assert.ok(validRuleTypes.includes('unsupported_completion'));
+  assert.ok(validRuleTypes.includes('unresolved_work'));
 });
 
 test('Regression Net Change Status Transitions', () => {
