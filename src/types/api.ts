@@ -1,4 +1,4 @@
-export type SpeakerRole = 'customer' | 'agent' | 'system';
+export type SpeakerRole = 'customer' | 'agent' | 'system' | 'tool';
 
 export interface Message {
   id: string;
@@ -28,8 +28,10 @@ export type EvaluationStatus = 'PASS' | 'FAIL' | 'INCONCLUSIVE';
 export type RuleType =
   | 'required_information'
   | 'policy_compliance'
-  | 'forbidden_promises'
-  | 'external_action_verification';
+  | 'required_steps'
+  | 'prohibited_claims'
+  | 'unsupported_completion'
+  | 'unresolved_work';
 
 export interface EvidenceSpan {
   message_id: string;
@@ -41,12 +43,15 @@ export interface EvidenceSpan {
 }
 
 export interface RuleResult {
+  rule_id?: string;
   rule_name: string;
   rule_type: RuleType | string;
+  rule_version?: string;
   status: EvaluationStatus;
   explanation: string;
   evidence: EvidenceSpan[];
   metadata?: Record<string, unknown>;
+  details?: Record<string, unknown>;
 }
 
 export interface EvaluationReport {
@@ -61,8 +66,9 @@ export interface EvaluationReport {
 }
 
 export interface RuleConfig {
+  id?: string;
   rule_type: RuleType;
-  name: string;
+  name?: string | null;
   description?: string;
   parameters: Record<string, unknown>;
 }
@@ -129,4 +135,22 @@ export interface TelephonyCall {
 export interface HealthResponse {
   status: string;
   service: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  full_name: string;
+  created_at: string;
+}
+
+export interface SignupPayload {
+  full_name: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
 }

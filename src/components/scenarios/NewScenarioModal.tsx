@@ -5,11 +5,9 @@ import { EvaluationScenario, RuleConfig, RuleType } from '@/types/api';
 import { novoraApi } from '@/lib/api';
 import {
   X,
-  Plus,
   Trash2,
   ShieldCheck,
   AlertCircle,
-  HelpCircle,
   RefreshCw,
 } from 'lucide-react';
 
@@ -47,7 +45,6 @@ export const NewScenarioModal: React.FC<NewScenarioModalProps> = ({
 
   const [ruleType, setRuleType] = useState<RuleType>('policy_compliance');
   const [ruleName, setRuleName] = useState('');
-  const [ruleParamKey, setRuleParamKey] = useState('max_refund_amount');
   const [ruleParamVal, setRuleParamVal] = useState('50');
 
   const [loading, setLoading] = useState(false);
@@ -74,15 +71,19 @@ export const NewScenarioModal: React.FC<NewScenarioModalProps> = ({
       };
     } else if (ruleType === 'policy_compliance') {
       parameters = {
-        [ruleParamKey || 'max_refund_amount']: parseFloat(ruleParamVal) || ruleParamVal,
+        max_refund_amount: parseFloat(ruleParamVal) || ruleParamVal,
       };
-    } else if (ruleType === 'forbidden_promises') {
+    } else if (ruleType === 'prohibited_claims') {
       parameters = {
-        prohibited_phrases: ruleParamVal.split(',').map((s) => s.trim()).filter(Boolean),
+        prohibited_patterns: ruleParamVal.split(',').map((s) => s.trim()).filter(Boolean),
       };
-    } else if (ruleType === 'external_action_verification') {
+    } else if (ruleType === 'unsupported_completion') {
       parameters = {
-        required_action_type: ruleParamVal.trim(),
+        action_type: ruleParamVal.trim(),
+      };
+    } else if (ruleType === 'required_steps') {
+      parameters = {
+        steps: ruleParamVal.split(',').map((s) => s.trim()).filter(Boolean),
       };
     }
 
@@ -364,8 +365,10 @@ export const NewScenarioModal: React.FC<NewScenarioModalProps> = ({
                   >
                     <option value="policy_compliance">policy_compliance (Numeric limit)</option>
                     <option value="required_information">required_information (Fields)</option>
-                    <option value="forbidden_promises">forbidden_promises (Banned phrases)</option>
-                    <option value="external_action_verification">external_action_verification (Proof)</option>
+                    <option value="required_steps">required_steps (Workflow order)</option>
+                    <option value="prohibited_claims">prohibited_claims (Banned patterns)</option>
+                    <option value="unsupported_completion">unsupported_completion (Action verification)</option>
+                    <option value="unresolved_work">unresolved_work (Resolution check)</option>
                   </select>
                 </div>
 
@@ -390,7 +393,7 @@ export const NewScenarioModal: React.FC<NewScenarioModalProps> = ({
 
               <div className="text-xs">
                 <label className="block text-[11px] text-[var(--text-muted)] mb-1">
-                  Parameter Value ({ruleType === 'required_information' ? 'comma-separated field names' : ruleType === 'forbidden_promises' ? 'comma-separated prohibited phrases' : 'numeric amount or action type'})
+                  Parameter Value ({ruleType === 'required_information' ? 'comma-separated field names' : ruleType === 'required_steps' ? 'comma-separated workflow steps' : ruleType === 'prohibited_claims' ? 'comma-separated regex patterns' : ruleType === 'unsupported_completion' ? 'action type (optional)' : ruleType === 'unresolved_work' ? 'uses backend defaults' : 'numeric amount'})
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -402,7 +405,13 @@ export const NewScenarioModal: React.FC<NewScenarioModalProps> = ({
                         ? '50.0'
                         : ruleType === 'required_information'
                         ? 'order_id, tracking_number'
-                        : 'prohibited phrase'
+                        : ruleType === 'required_steps'
+                        ? 'verify identity, confirm eligibility'
+                        : ruleType === 'prohibited_claims'
+                        ? 'guarantee an instant refund, waive all fees'
+                        : ruleType === 'unsupported_completion'
+                        ? 'process_refund'
+                        : 'Uses built-in resolution patterns'
                     }
                     className="flex-1 rounded-lg border px-3 py-1.5 text-xs"
                     style={{

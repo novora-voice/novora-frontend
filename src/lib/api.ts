@@ -6,8 +6,13 @@ import {
   ImportTranscriptPayload,
   EvaluateConversationPayload,
   RegressionReport,
+  RuleResult,
+  SpeakerRole,
   TelephonyCall,
   HealthResponse,
+  AuthUser,
+  SignupPayload,
+  LoginPayload,
 } from '@/types/api';
 
 export class ApiError extends Error {
@@ -22,14 +27,63 @@ export class ApiError extends Error {
 }
 
 // Default to backend API at localhost:8000 or custom environment URL
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+).replace(/\/+$/, '');
+const API_PROXY_PATH = '/api/backend';
+
+interface BackendEvidenceReference {
+  message_id: string;
+  speaker: SpeakerRole;
+  sequence: number;
+  char_start?: number | null;
+  char_end?: number | null;
+  snippet: string;
+}
+
+type BackendRuleResult = Omit<RuleResult, 'evidence'> & {
+  evidence: BackendEvidenceReference[];
+};
+
+type BackendEvaluationReport = Omit<
+  EvaluationReport,
+  'evaluated_at' | 'limitations' | 'rule_results'
+> & {
+  created_at: string;
+  rule_results: BackendRuleResult[];
+};
+
+type BackendRegressionReport = Omit<
+  RegressionReport,
+  'net_status_change'
+> & {
+  net_status_change: RegressionReport['net_status_change'] | 'neutral';
+};
+
+function toEvaluationReport(report: BackendEvaluationReport): EvaluationReport {
+  return {
+    ...report,
+    evaluated_at: report.created_at,
+    limitations: [],
+    rule_results: report.rule_results.map((rule) => ({
+      ...rule,
+      evidence: rule.evidence.map((evidence) => ({
+        message_id: evidence.message_id,
+        message_sequence: evidence.sequence,
+        start_char: evidence.char_start ?? 0,
+        end_char: evidence.char_end ?? 0,
+        excerpt: evidence.snippet,
+        role: evidence.speaker,
+      })),
+    })),
+  };
+}
 
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${API_PROXY_PATH}${endpoint}`;
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -42,18 +96,27 @@ async function request<T>(
       headers,
     });
 
+    const responseText = await res.text();
     if (!res.ok) {
       let errorDetail = `Request failed with status ${res.status}`;
       try {
-        const errorJson = await res.json();
-        errorDetail = errorJson.detail || errorJson.message || JSON.stringify(errorJson);
+        const errorJson = JSON.parse(responseText);
+        const detail = errorJson.detail || errorJson.message;
+        errorDetail =
+          typeof detail === 'string'
+            ? detail
+            : JSON.stringify(detail ?? errorJson);
       } catch {
-        errorDetail = await res.text();
+        if (responseText) errorDetail = responseText;
       }
       throw new ApiError(res.status, errorDetail);
     }
 
-    return (await res.json()) as T;
+    try {
+      return JSON.parse(responseText) as T;
+    } catch {
+      throw new ApiError(res.status, 'Backend returned an invalid JSON response.');
+    }
   } catch (err: unknown) {
     if (err instanceof ApiError) {
       throw err;
@@ -70,6 +133,30 @@ export const novoraApi = {
 
   async checkHealth(): Promise<HealthResponse> {
     return request<HealthResponse>('/health');
+  },
+
+  async signup(payload: SignupPayload): Promise<AuthUser> {
+    return request<AuthUser>('/api/v1/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async login(payload: LoginPayload): Promise<AuthUser> {
+    return request<AuthUser>('/api/v1/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getCurrentUser(): Promise<AuthUser> {
+    return request<AuthUser>('/api/v1/auth/me');
+  },
+
+  async logout(): Promise<void> {
+    await request<{ status: string }>('/api/v1/auth/logout', {
+      method: 'POST',
+    });
   },
 
   async listScenarios(limit = 50, offset = 0): Promise<EvaluationScenario[]> {
@@ -97,36 +184,49 @@ export const novoraApi = {
   },
 
   async evaluateConversation(payload: EvaluateConversationPayload): Promise<EvaluationReport> {
-    return request<EvaluationReport>('/api/v1/evaluations', {
+    const report = await request<BackendEvaluationReport>('/api/v1/evaluations', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+    return toEvaluationReport(report);
   },
 
   async getEvaluation(id: string): Promise<EvaluationReport> {
-    return request<EvaluationReport>(`/api/v1/evaluations/${encodeURIComponent(id)}`);
+    const report = await request<BackendEvaluationReport>(
+      `/api/v1/evaluations/${encodeURIComponent(id)}`
+    );
+    return toEvaluationReport(report);
   },
 
   async listEvaluations(scenarioId: string, limit = 50, offset = 0): Promise<EvaluationReport[]> {
-    return request<EvaluationReport[]>(
+    const reports = await request<BackendEvaluationReport[]>(
       `/api/v1/evaluations?scenario_id=${encodeURIComponent(scenarioId)}&limit=${limit}&offset=${offset}`
     );
+    return reports.map(toEvaluationReport);
   },
 
   async getScenarioHistory(scenarioId: string, limit = 50, offset = 0): Promise<EvaluationReport[]> {
-    return request<EvaluationReport[]>(
+    const reports = await request<BackendEvaluationReport[]>(
       `/api/v1/scenarios/${encodeURIComponent(scenarioId)}/history?limit=${limit}&offset=${offset}`
     );
+    return reports.map(toEvaluationReport);
   },
 
   async compareEvaluations(baselineId: string, candidateId: string): Promise<RegressionReport> {
-    return request<RegressionReport>('/api/v1/evaluations/compare', {
+    const report = await request<BackendRegressionReport>('/api/v1/evaluations/compare', {
       method: 'POST',
       body: JSON.stringify({
         baseline_evaluation_id: baselineId,
         candidate_evaluation_id: candidateId,
       }),
     });
+    return {
+      ...report,
+      net_status_change:
+        report.net_status_change === 'neutral'
+          ? 'unchanged'
+          : report.net_status_change,
+    };
   },
 
   async listTelephonyCalls(limit = 50, offset = 0): Promise<TelephonyCall[]> {

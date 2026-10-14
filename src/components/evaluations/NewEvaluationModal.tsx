@@ -6,15 +6,13 @@ import { novoraApi } from '@/lib/api';
 import {
   X,
   Play,
-  FileText,
   AlertCircle,
-  Sparkles,
-  Check,
   RefreshCw,
 } from 'lucide-react';
 
 interface NewEvaluationModalProps {
   scenarios: EvaluationScenario[];
+  initialScenarioId?: string;
   onClose: () => void;
   onEvaluationCreated: (report: EvaluationReport) => void;
 }
@@ -53,11 +51,12 @@ Customer: Perfect, thanks.`,
 
 export const NewEvaluationModal: React.FC<NewEvaluationModalProps> = ({
   scenarios,
+  initialScenarioId,
   onClose,
   onEvaluationCreated,
 }) => {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>(
-    scenarios[0]?.id || ''
+    initialScenarioId || scenarios[0]?.id || ''
   );
   const [transcriptText, setTranscriptText] = useState<string>(
     SAMPLE_TRANSCRIPTS[0].text

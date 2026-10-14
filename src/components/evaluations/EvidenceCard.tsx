@@ -3,7 +3,7 @@
 import React from 'react';
 import { RuleResult } from '@/types/api';
 import { StatusBadge } from './StatusBadge';
-import { Quote, User, Bot, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Quote, User, Bot } from 'lucide-react';
 
 interface EvidenceCardProps {
   rule: RuleResult;
@@ -16,10 +16,14 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ rule }) => {
         return 'Required Information';
       case 'policy_compliance':
         return 'Policy Compliance';
-      case 'forbidden_promises':
-        return 'Forbidden Promises';
-      case 'external_action_verification':
-        return 'External Action Proof';
+      case 'required_steps':
+        return 'Required Workflow Steps';
+      case 'prohibited_claims':
+        return 'Prohibited Claims';
+      case 'unsupported_completion':
+        return 'Unsupported Completion';
+      case 'unresolved_work':
+        return 'Unresolved Work';
       default:
         return t.replace(/_/g, ' ');
     }
@@ -88,7 +92,7 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({ rule }) => {
                       }`}
                     >
                       {isAgent ? <Bot size={11} /> : <User size={11} />}
-                      <span>{isAgent ? 'Agent' : 'Customer'}</span>
+                      <span>{span.role}</span>
                     </span>
                     <span className="text-[11px] font-mono text-[var(--text-muted)]">
                       Turn #{span.message_sequence}

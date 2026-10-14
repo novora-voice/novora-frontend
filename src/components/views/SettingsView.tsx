@@ -62,7 +62,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </h3>
         </div>
         <p className="text-xs text-[var(--text-muted)] mb-5">
-          Select your visual theme. Novora uses an official midnight navy dark scheme and crisp ice gray light scheme.
+          Select your visual theme. Dark mode uses Novora midnight navy, while light mode pairs a white canvas with gray 200 and gray 300 surfaces.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -105,12 +105,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             }}
           >
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-[#F1F5F9] border border-[#E2E8F0] flex items-center justify-center text-amber-500">
+              <div
+                className="h-8 w-8 rounded-lg border flex items-center justify-center text-amber-500"
+                style={{
+                  backgroundColor: 'var(--bg-elevated)',
+                  borderColor: 'var(--border-color)',
+                }}
+              >
                 <Sun size={16} />
               </div>
               <div>
-                <div className="text-sm font-bold text-[#0B1F44]">Ice Gray Light</div>
-                <div className="text-[11px] text-[#64748B]">Clean Crisp #F8FAFC</div>
+                <div className="text-sm font-bold text-[var(--text-primary)]">White &amp; Gray Light</div>
+                <div className="text-[11px] text-[var(--text-secondary)]">White base · Gray 200/300 surfaces</div>
               </div>
             </div>
             {theme === 'light' && <CheckCircle2 size={18} className="text-[var(--primary)]" />}
