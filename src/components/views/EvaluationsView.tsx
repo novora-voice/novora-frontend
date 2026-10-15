@@ -1,17 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { EvaluationReport, EvaluationScenario } from '@/types/api';
+import { EvaluationReport, EvaluationScenario, EvaluationStatus } from '@/types/api';
+import { EvaluationsFilterBar } from '../evaluations/EvaluationsFilterBar';
+import { BatchExecutionModal } from '../evaluations/BatchExecutionModal';
 import { StatusBadge } from '../evaluations/StatusBadge';
-import {
-  Search,
-  Filter,
-  GitCompare,
-  Plus,
-  Calendar,
-  ExternalLink,
-  ChevronRight,
-} from 'lucide-react';
+import { ClipboardCheck, Play, GitCompare, ExternalLink, Clock } from 'lucide-react';
 
 interface EvaluationsViewProps {
   evaluations: EvaluationReport[];
@@ -28,201 +22,131 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
   onOpenNewEvaluation,
   onOpenCompare,
 }) => {
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [selectedScenarioId, setSelectedScenarioId] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<EvaluationStatus | 'ALL'>('ALL');
+  const [scenarioFilter, setScenarioFilter] = useState('ALL');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBatchOpen, setIsBatchOpen] = useState(false);
 
   const filtered = evaluations.filter((ev) => {
-    if (statusFilter !== 'ALL' && ev.overall_status !== statusFilter) {
-      return false;
-    }
-    if (selectedScenarioId !== 'ALL' && ev.scenario_id !== selectedScenarioId) {
-      return false;
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchId = ev.id.toLowerCase().includes(q);
-      const matchSummary = ev.summary.toLowerCase().includes(q);
-      const matchScen = ev.scenario_id.toLowerCase().includes(q);
-      if (!matchId && !matchSummary && !matchScen) return false;
-    }
-    return true;
+    const matchSearch =
+      ev.summary?.toLowerCase().includes(search.toLowerCase()) ||
+      ev.id.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === 'ALL' || ev.overall_status === statusFilter;
+    const matchScenario = scenarioFilter === 'ALL' || ev.scenario_id === scenarioFilter;
+    return matchSearch && matchStatus && matchScenario;
   });
 
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+  };
+
+  const selectedReports = evaluations.filter((e) => selectedIds.includes(e.id));
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Top Filter Bar */}
-      <div
-        className="rounded-2xl border p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--border-color)',
-        }}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          {['ALL', 'PASS', 'FAIL', 'INCONCLUSIVE'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
-                statusFilter === st
-                  ? 'bg-[var(--primary)] text-white shadow-sm'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]'
-              }`}
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: 'var(--primary-subtle)', color: 'var(--primary)' }}>
+            <ClipboardCheck size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Evaluations & Reports</h2>
+            <p className="text-xs text-[var(--text-secondary)]">Evidence-backed evaluation runs with character-level citations and diffing</p>
+          </div>
+        </div>
+
+        <button
+          onClick={onOpenNewEvaluation}
+          className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-transform active:scale-95"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          <Play size={14} />
+          <span>New Evaluation</span>
+        </button>
+      </div>
+
+      <EvaluationsFilterBar
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        scenarioFilter={scenarioFilter}
+        onScenarioFilterChange={setScenarioFilter}
+        scenarios={scenarios}
+        selectedCount={selectedIds.length}
+        onStartBatch={() => setIsBatchOpen(true)}
+      />
+
+      {filtered.length > 0 ? (
+        <div className="rounded-2xl border divide-y overflow-hidden shadow-sm" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}>
+          {filtered.map((ev) => (
+            <div
+              key={ev.id}
+              onClick={() => onSelectEvaluation(ev)}
+              className="flex items-center justify-between p-4 cursor-pointer hover:bg-[var(--bg-elevated)] transition-colors"
             >
-              {st}
-            </button>
+              <div className="flex items-start gap-3 overflow-hidden pr-3">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(ev.id)}
+                  onClick={(e) => toggleSelect(ev.id, e)}
+                  onChange={() => {}}
+                  className="mt-1 rounded text-[var(--primary)] focus:ring-0"
+                />
+                <div className="space-y-1 overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={ev.overall_status} size="sm" />
+                    <span className="text-xs font-bold text-[var(--text-primary)] truncate max-w-lg">
+                      {ev.summary || 'Evaluation Run'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-[var(--text-muted)] font-mono">
+                    <span>Scenario: {ev.scenario_id}</span>
+                    <span>•</span>
+                    <span>{ev.rule_results?.length || 0} checks</span>
+                    <span>•</span>
+                    <span>ID: {ev.id}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenCompare(ev.id);
+                  }}
+                  title="Compare with another run"
+                  className="rounded-lg border p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
+                  style={{ borderColor: 'var(--border-color)' }}
+                >
+                  <GitCompare size={13} />
+                </button>
+                <div className="text-xs text-[var(--text-muted)] flex items-center gap-1 font-mono">
+                  <Clock size={11} />
+                  <span>{new Date(ev.evaluated_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                </div>
+                <ExternalLink size={14} className="text-[var(--text-muted)]" />
+              </div>
+            </div>
           ))}
         </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Scenario Selector */}
-          <select
-            value={selectedScenarioId}
-            onChange={(e) => setSelectedScenarioId(e.target.value)}
-            className="rounded-lg border px-3 py-1.5 text-xs font-semibold focus:outline-none"
-            style={{
-              backgroundColor: 'var(--bg-elevated)',
-              borderColor: 'var(--border-color)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <option value="ALL">All Scenarios</option>
-            {scenarios.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Search box */}
-          <div className="relative">
-            <Search
-              size={14}
-              className="absolute left-3 top-2.5 text-[var(--text-muted)]"
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search reports or ID..."
-              className="w-48 sm:w-60 rounded-lg border pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
-              style={{
-                backgroundColor: 'var(--bg-elevated)',
-                borderColor: 'var(--border-color)',
-                color: 'var(--text-primary)',
-              }}
-            />
-          </div>
-
-          {/* Compare Button */}
-          <button
-            onClick={() => onOpenCompare()}
-            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-            style={{ borderColor: 'var(--border-color)' }}
-          >
-            <GitCompare size={14} />
-            <span>Compare Runs</span>
-          </button>
+      ) : (
+        <div className="rounded-2xl border p-12 text-center" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}>
+          <ClipboardCheck size={36} className="mx-auto text-[var(--text-muted)] mb-3" />
+          <h3 className="text-sm font-bold text-[var(--text-primary)]">No evaluations match criteria</h3>
+          <p className="text-xs text-[var(--text-muted)] mt-1">Try resetting your filters or run a new evaluation test.</p>
         </div>
-      </div>
+      )}
 
-      {/* Evaluations Table Container */}
-      <div
-        className="rounded-2xl border shadow-sm overflow-hidden"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--border-color)',
-        }}
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr
-                className="border-b text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]"
-                style={{
-                  backgroundColor: 'var(--bg-elevated)',
-                  borderColor: 'var(--border-color)',
-                }}
-              >
-                <th className="px-5 py-3.5">Status</th>
-                <th className="px-5 py-3.5">Report / Summary</th>
-                <th className="px-5 py-3.5">Scenario</th>
-                <th className="px-5 py-3.5">Rule Breakdown</th>
-                <th className="px-5 py-3.5">Evaluated At</th>
-                <th className="px-5 py-3.5 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-[var(--text-muted)]">
-                    No evaluations match the selected filter criteria.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((ev) => {
-                  const passed = ev.rule_results.filter((r) => r.status === 'PASS').length;
-                  const total = ev.rule_results.length;
-                  const scen = scenarios.find((s) => s.id === ev.scenario_id);
-
-                  return (
-                    <tr
-                      key={ev.id}
-                      onClick={() => onSelectEvaluation(ev)}
-                      className="hover:bg-[var(--bg-elevated)] cursor-pointer transition-colors group"
-                    >
-                      <td className="px-5 py-4">
-                        <StatusBadge status={ev.overall_status} size="sm" />
-                      </td>
-                      <td className="px-5 py-4 max-w-md">
-                        <div className="font-bold text-[var(--text-primary)] line-clamp-1">
-                          {ev.summary}
-                        </div>
-                        <div className="text-[11px] font-mono text-[var(--text-muted)] mt-0.5">
-                          #{ev.id}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="font-semibold text-[var(--text-primary)]">
-                          {scen ? scen.name : ev.scenario_id}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className="font-bold text-xs"
-                            style={{
-                              color:
-                                passed === total
-                                  ? 'var(--status-success)'
-                                  : 'var(--status-error)',
-                            }}
-                          >
-                            {passed}/{total}
-                          </span>
-                          <span className="text-[11px] text-[var(--text-muted)]">
-                            passed
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-[var(--text-muted)] font-mono text-[11px]">
-                        {new Date(ev.evaluated_at).toLocaleString()}
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <span className="inline-flex items-center gap-1 font-bold text-[var(--primary)] opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span>Inspect</span>
-                          <ChevronRight size={14} />
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <BatchExecutionModal
+        selectedReports={selectedReports}
+        isOpen={isBatchOpen}
+        onClose={() => setIsBatchOpen(false)}
+        onRerunReport={onSelectEvaluation}
+      />
     </div>
   );
 };

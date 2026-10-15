@@ -5,17 +5,17 @@
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  /* Light mode surfaces */
-  --bg-primary: #FFFFFF;
-  --bg-surface: #E5E7EB;
-  --bg-elevated: #D1D5DB;
+  /* Light mode surfaces per specification */
+  --bg-primary: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F1F5F9;
 
-  /* Light mode text */
-  --text-primary: #374151;
-  --text-secondary: #4B5563;
-  --text-muted: #6B7280;
+  /* Light mode text per specification */
+  --text-primary: #0B1F44;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
 
-  --border-color: #D1D5DB;
+  --border-color: #E2E8F0;
 
   /* Primary brand */
   --primary: #2563EB;
@@ -40,19 +40,19 @@
   --brand-ice: #E2E8F0;
 
   /* Shadows */
-  --shadow-card: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
-  --shadow-elevated: 0 4px 16px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.04);
-  --shadow-modal: 0 20px 60px rgba(0,0,0,.14), 0 8px 24px rgba(0,0,0,.08);
+  --shadow-card: 0 1px 3px rgba(11, 31, 68, 0.05), 0 4px 12px rgba(11, 31, 68, 0.03);
+  --shadow-elevated: 0 4px 16px rgba(11, 31, 68, 0.06), 0 1px 3px rgba(11, 31, 68, 0.03);
+  --shadow-modal: 0 20px 60px rgba(11, 31, 68, 0.12), 0 8px 24px rgba(11, 31, 68, 0.06);
 }
 
 html.dark,
 [data-theme="dark"] {
-  /* Dark mode surfaces */
+  /* Dark mode surfaces per specification */
   --bg-primary: #0A0F1E;
   --bg-surface: #0B1F44;
   --bg-elevated: #102956;
 
-  /* Dark mode text */
+  /* Dark mode text per specification */
   --text-primary: #E2E8F0;
   --text-secondary: #94A3B8;
   --text-muted: #64748B;

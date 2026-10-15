@@ -22,9 +22,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setThemeState(savedTheme);
       applyTheme(savedTheme);
     } else {
-      // Default to dark mode per Novora primary theme direction
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const initial = prefersDark ? 'dark' : 'dark';
+      // Default to light theme per Novora brand specification
+      const initial: Theme = 'light';
       setThemeState(initial);
       applyTheme(initial);
     }
