@@ -2,7 +2,7 @@
 
 **Novora** is an enterprise evaluation, regression monitoring, and policy compliance infrastructure dashboard for conversational AI voice agents.
 
-This frontend application is built by **Claude B (Senior Frontend & Product Integration Engineer)** to provide a desktop-first, highly responsive, and accessible interface with working light and dark modes that connects end-to-end to the FastAPI backend.
+This frontend application is built to provide a desktop-first, highly responsive, and accessible interface with working light and dark modes that connects end-to-end to the FastAPI backend.
 
 ---
 
