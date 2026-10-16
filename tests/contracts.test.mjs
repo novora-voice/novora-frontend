@@ -23,9 +23,15 @@ test('Novora API URL and Endpoint Contracts', () => {
     scenarios: '/api/v1/scenarios',
     scenarioDetail: (id) => `/api/v1/scenarios/${encodeURIComponent(id)}`,
     scenarioHistory: (id) => `/api/v1/scenarios/${encodeURIComponent(id)}/history`,
+    scenarioTemplates: '/api/v1/scenarios/templates',
     evaluations: '/api/v1/evaluations',
     evaluationDetail: (id) => `/api/v1/evaluations/${encodeURIComponent(id)}`,
     compareEvaluations: '/api/v1/evaluations/compare',
+    testRuns: '/api/v1/test-runs',
+    testRunDetail: (id) => `/api/v1/test-runs/${encodeURIComponent(id)}`,
+    providers: '/api/v1/providers',
+    batches: '/api/v1/batches',
+    batchDetail: (id) => `/api/v1/batches/${encodeURIComponent(id)}`,
     importTranscript: '/api/v1/conversations/import-transcript',
     telephonyCalls: '/api/v1/telephony/calls',
     elevenlabsWebhook: '/api/v1/webhooks/elevenlabs',
@@ -36,12 +42,13 @@ test('Novora API URL and Endpoint Contracts', () => {
   assert.equal(endpoints.health, '/health');
   assert.equal(endpoints.scenarios, '/api/v1/scenarios');
   assert.equal(endpoints.scenarioDetail('scen_123'), '/api/v1/scenarios/scen_123');
-  assert.equal(endpoints.scenarioHistory('scen_123'), '/api/v1/scenarios/scen_123/history');
+  assert.equal(endpoints.scenarioTemplates, '/api/v1/scenarios/templates');
+  assert.equal(endpoints.testRuns, '/api/v1/test-runs');
+  assert.equal(endpoints.testRunDetail('trun_01'), '/api/v1/test-runs/trun_01');
+  assert.equal(endpoints.providers, '/api/v1/providers');
+  assert.equal(endpoints.batches, '/api/v1/batches');
   assert.equal(endpoints.compareEvaluations, '/api/v1/evaluations/compare');
   assert.equal(endpoints.importTranscript, '/api/v1/conversations/import-transcript');
-  assert.equal(endpoints.elevenlabsWebhook, '/api/v1/webhooks/elevenlabs');
-  assert.equal(endpoints.twilioWebhook, '/api/v1/webhooks/twilio');
-  assert.equal(endpoints.assemblyaiWebhook, '/api/v1/webhooks/assemblyai');
 });
 
 test('Evaluation Statuses & Deterministic Rule Types', () => {

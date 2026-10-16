@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: 'Novora — AI Voice Agent Evaluation Infrastructure',
   description: 'Deterministic evaluation, regression monitoring, and policy compliance for conversational AI voice agents.',
   icons: {
-    icon: '/novora-logo-dark.png',
+    icon: '/novora-logo-light.png',
   },
 };
 
@@ -34,4 +34,3 @@ export default function RootLayout({
     </html>
   );
 }
-
