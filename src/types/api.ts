@@ -31,7 +31,16 @@ export type RuleType =
   | 'required_steps'
   | 'prohibited_claims'
   | 'unsupported_completion'
-  | 'unresolved_work';
+  | 'unresolved_work'
+  | 'prohibited_phrase'
+  | 'required_phrase'
+  | 'expected_tool_call'
+  | 'prohibited_tool_call'
+  | 'required_closing'
+  | 'required_escalation'
+  | 'required_question'
+  | 'turn_constraints';
+
 
 export interface EvidenceSpan {
   message_id: string;
@@ -153,4 +162,22 @@ export interface SignupPayload {
 export interface LoginPayload {
   email: string;
   password: string;
+}
+
+export type VoiceProvider = 'elevenlabs' | 'assemblyai' | 'vapi' | 'retell' | 'twilio';
+
+export interface VoiceAgent {
+  id: string;
+  name: string;
+  provider: VoiceProvider;
+  agent_type: string;
+  configuration_status: 'ready' | 'draft' | 'needs_credentials';
+  agent_id_ref?: string;
+  system_prompt?: string;
+  tools?: string[];
+  execution_mode?: 'sandbox' | 'live';
+  created_at: string;
+  recent_evaluation_id?: string;
+  recent_evaluation_status?: EvaluationStatus;
+  last_activity_at?: string;
 }
