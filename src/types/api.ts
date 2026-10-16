@@ -31,7 +31,16 @@ export type RuleType =
   | 'required_steps'
   | 'prohibited_claims'
   | 'unsupported_completion'
-  | 'unresolved_work';
+  | 'unresolved_work'
+  | 'prohibited_phrase'
+  | 'required_phrase'
+  | 'expected_tool_call'
+  | 'prohibited_tool_call'
+  | 'required_closing'
+  | 'required_escalation'
+  | 'required_question'
+  | 'turn_constraints';
+
 
 export interface EvidenceSpan {
   message_id: string;

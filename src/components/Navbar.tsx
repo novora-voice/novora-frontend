@@ -70,13 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const currentTabInfo = TAB_TITLES[activeTab] ?? TAB_TITLES.overview;
 
   return (
-    <header
-      className="sticky top-0 z-30 flex h-16 items-center justify-between border-b px-4 sm:px-6 backdrop-blur-md"
-      style={{
-        backgroundColor: 'var(--bg-surface)',
-        borderColor: 'var(--border-color)',
-      }}
-    >
+    <header className="navbar-glass sticky top-0 z-30 flex h-16 items-center justify-between border-b px-4 sm:px-6">
       <div className="flex items-center gap-3">
         <button
           onClick={onOpenMobile}

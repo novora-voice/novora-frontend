@@ -11,7 +11,7 @@ import { ScenariosView } from '@/components/views/ScenariosView';
 import { IntegrationsView } from '@/components/views/IntegrationsView';
 import { KnowledgeView } from '@/components/views/KnowledgeView';
 import { SettingsView } from '@/components/views/SettingsView';
-import { AuthUser, EvaluationReport, EvaluationScenario, VoiceAgent } from '@/types/api';
+import { AuthUser, EvaluationReport, EvaluationScenario, VoiceAgent, VoiceProvider } from '@/types/api';
 import { ApiError, novoraApi } from '@/lib/api';
 import { SEED_SCENARIOS, SEED_EVALUATIONS, SEED_AGENTS } from '@/lib/mockData';
 import { EvaluationDetailModal } from '@/components/evaluations/EvaluationDetailModal';
@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [plannedFeature, setPlannedFeature] = useState<PlannedFeatureType | null>(null);
   const [isProviderRequiredOpen, setIsProviderRequiredOpen] = useState(false);
   const [initialScenarioId, setInitialScenarioId] = useState<string | undefined>();
+  const [initialProvider, setInitialProvider] = useState<VoiceProvider | undefined>();
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -108,9 +109,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="relative isolate min-h-screen">
+    <div className="dashboard-shell relative isolate h-dvh overflow-hidden">
       <ToastNotification toast={toast} onDismiss={() => setToast(null)} />
-      <div className="relative z-10 flex min-h-screen">
+      <div className="relative z-10 flex h-full min-h-0">
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -120,28 +121,32 @@ export default function DashboardPage() {
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
-        <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Main content — pushed right of the 240px sidebar on lg+ */}
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden lg:ml-60">
           <Navbar
             activeTab={activeTab}
             onOpenMobile={() => setIsMobileSidebarOpen(true)}
             onNewEvaluation={() => setIsWizardOpen(true)}
             onNewScenario={() => setIsNewScenarioOpen(true)}
             onRefresh={loadData}
-            onLogout={() => router.replace('/login')}
+            onLogout={async () => { await novoraApi.logout().catch(() => {}); router.replace('/login'); }}
             currentUser={currentUser}
             isLoading={isLoading}
           />
 
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             {activeTab === 'overview' && (
               <OverviewView
                 evaluations={evaluations}
                 scenarios={scenarios}
+                agents={agents}
+                isBackendConnected={isBackendConnected}
                 onSelectEvaluation={setSelectedEvaluation}
                 onOpenNewEvaluation={() => setIsWizardOpen(true)}
                 onOpenNewScenario={() => setIsNewScenarioOpen(true)}
                 onNavigateTab={setActiveTab}
                 onOpenCompare={() => setIsCompareOpen(true)}
+                onRunScenario={(id) => { setInitialScenarioId(id); setIsWizardOpen(true); }}
               />
             )}
             {activeTab === 'agents' && (
@@ -149,8 +154,17 @@ export default function DashboardPage() {
                 agents={agents}
                 evaluations={evaluations}
                 onAddAgent={(ag) => { setAgents([ag, ...agents]); showToast(`Agent "${ag.name}" configured!`, 'success'); }}
-                onRunTest={(ag) => { setInitialScenarioId(scenarios[0]?.id); setIsWizardOpen(true); }}
+                onRunTest={(ag) => {
+                  setInitialProvider(ag.provider as VoiceProvider);
+                  setInitialScenarioId(scenarios[0]?.id);
+                  setIsWizardOpen(true);
+                }}
                 onOpenEvaluationDetail={setSelectedEvaluation}
+                onSelectInfrastructureProvider={(prov) => {
+                  setInitialProvider(prov);
+                  setInitialScenarioId(scenarios[0]?.id);
+                  setIsWizardOpen(true);
+                }}
               />
             )}
             {activeTab === 'evaluations' && (
@@ -167,6 +181,9 @@ export default function DashboardPage() {
                 scenarios={scenarios}
                 onOpenNewScenario={() => setIsNewScenarioOpen(true)}
                 onRunScenario={(id) => { setInitialScenarioId(id); setIsWizardOpen(true); }}
+                onDuplicateScenario={(scen) => { setScenarios([scen, ...scenarios]); showToast(`Scenario "${scen.name}" duplicated!`, 'success'); }}
+                onUpdateScenario={(upd) => { setScenarios(scenarios.map((s) => s.id === upd.id ? upd : s)); showToast(`Scenario "${upd.name}" updated!`, 'success'); }}
+                onViewScenarioHistory={() => setActiveTab('evaluations')}
               />
             )}
             {activeTab === 'integrations' && <IntegrationsView scenarios={scenarios} onRefreshAll={loadData} />}
@@ -177,8 +194,21 @@ export default function DashboardPage() {
       </div>
 
       <EvaluationDetailModal report={selectedEvaluation} onClose={() => setSelectedEvaluation(null)} onOpenCompare={(id) => { setSelectedEvaluation(null); setCompareBaselineId(id); setIsCompareOpen(true); }} />
-      <ProviderEvaluationWizardModal isOpen={isWizardOpen} onClose={() => setIsWizardOpen(false)} scenarios={scenarios} initialScenarioId={initialScenarioId} isBackendConnected={isBackendConnected} onEvaluationCreated={(rep) => { setEvaluations([rep, ...evaluations]); setSelectedEvaluation(rep); showToast(`Evaluation finished! Verdict: ${rep.overall_status}`, 'success'); }} onRequireProviderModal={() => setIsProviderRequiredOpen(true)} />
-      <NewScenarioModal onClose={() => setIsNewScenarioOpen(false)} onScenarioCreated={(scen) => { setScenarios([scen, ...scenarios]); showToast(`Scenario "${scen.name}" created!`, 'success'); }} />
+      <ProviderEvaluationWizardModal
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        scenarios={scenarios}
+        initialScenarioId={initialScenarioId}
+        initialProvider={initialProvider}
+        isBackendConnected={isBackendConnected}
+        onEvaluationCreated={(rep) => {
+          setEvaluations([rep, ...evaluations]);
+          setSelectedEvaluation(rep);
+          showToast(`Evaluation finished! Verdict: ${rep.overall_status}`, 'success');
+        }}
+        onRequireProviderModal={() => setIsProviderRequiredOpen(true)}
+      />
+      {isNewScenarioOpen && <NewScenarioModal onClose={() => setIsNewScenarioOpen(false)} onScenarioCreated={(scen) => { setScenarios([scen, ...scenarios]); showToast(`Scenario "${scen.name}" created!`, 'success'); }} />}
       {isCompareOpen && <RegressionDiffModal evaluations={evaluations} initialBaselineId={compareBaselineId} onClose={() => setIsCompareOpen(false)} />}
       <PlannedFeatureModal feature={plannedFeature} onClose={() => setPlannedFeature(null)} />
       <ProviderRequiredModal isOpen={isProviderRequiredOpen} onClose={() => setIsProviderRequiredOpen(false)} onNavigateToIntegrations={() => setActiveTab('integrations')} />

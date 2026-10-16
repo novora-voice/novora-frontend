@@ -1,25 +1,34 @@
 'use client';
 
 import React, { useState } from 'react';
-import { EvaluationScenario, EvaluationReport } from '@/types/api';
+import { EvaluationScenario } from '@/types/api';
 import { ScenarioCard } from '../scenarios/ScenarioCard';
 import { ScenarioCriteriaModal } from '../scenarios/ScenarioCriteriaModal';
+import { ScenarioTemplateBar } from '../scenarios/ScenarioTemplateBar';
+import { EditScenarioModal } from '../scenarios/EditScenarioModal';
+import { ScenarioTemplate } from '@/lib/scenarioTemplates';
 import { FlaskConical, Plus, Search } from 'lucide-react';
 
 interface ScenariosViewProps {
   scenarios: EvaluationScenario[];
   onOpenNewScenario: () => void;
   onRunScenario: (scenarioId: string) => void;
-  onSelectEvaluation?: (report: EvaluationReport) => void;
+  onDuplicateScenario?: (scenario: EvaluationScenario) => void;
+  onUpdateScenario?: (scenario: EvaluationScenario) => void;
+  onViewScenarioHistory?: (scenarioId: string) => void;
 }
 
 export const ScenariosView: React.FC<ScenariosViewProps> = ({
   scenarios,
   onOpenNewScenario,
   onRunScenario,
+  onDuplicateScenario,
+  onUpdateScenario,
+  onViewScenarioHistory,
 }) => {
   const [search, setSearch] = useState('');
   const [selectedCriteriaScenario, setSelectedCriteriaScenario] = useState<EvaluationScenario | null>(null);
+  const [editingScenario, setEditingScenario] = useState<EvaluationScenario | null>(null);
 
   const filtered = scenarios.filter(
     (s) =>
@@ -27,15 +36,36 @@ export const ScenariosView: React.FC<ScenariosViewProps> = ({
       s.business_goal.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleSelectTemplate = (template: ScenarioTemplate) => {
+    if (onDuplicateScenario) {
+      const newScenario: EvaluationScenario = {
+        id: `scen_${template.template_id}_${Date.now().toString().slice(-4)}`,
+        name: template.name,
+        business_goal: template.business_goal,
+        success_criteria: template.success_criteria,
+        rules: template.rules,
+        created_at: new Date().toISOString(),
+      };
+      onDuplicateScenario(newScenario);
+    } else {
+      onOpenNewScenario();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: 'var(--primary-subtle)', color: 'var(--primary)' }}>
+          <div
+            className="flex h-11 w-11 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: 'var(--primary-subtle)', color: 'var(--primary)' }}
+          >
             <FlaskConical size={24} />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Scenarios Directory</h2>
+            <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+              Scenarios Directory
+            </h2>
             <p className="text-xs text-[var(--text-secondary)]">
               Deterministic test cases, policy ceilings, and workflow verification suites
             </p>
@@ -52,6 +82,10 @@ export const ScenariosView: React.FC<ScenariosViewProps> = ({
         </button>
       </div>
 
+      {/* Quick-Start Template Bar */}
+      <ScenarioTemplateBar onSelectTemplate={handleSelectTemplate} />
+
+      {/* Search Input */}
       <div className="relative w-full max-w-md">
         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
         <input
@@ -64,6 +98,7 @@ export const ScenariosView: React.FC<ScenariosViewProps> = ({
         />
       </div>
 
+      {/* Scenarios Grid */}
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((scen) => (
@@ -72,23 +107,40 @@ export const ScenariosView: React.FC<ScenariosViewProps> = ({
               scenario={scen}
               onRun={onRunScenario}
               onViewCriteria={setSelectedCriteriaScenario}
+              onDuplicate={onDuplicateScenario}
+              onEdit={setEditingScenario}
+              onViewHistory={onViewScenarioHistory}
             />
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border p-12 text-center" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}>
+        <div
+          className="rounded-2xl border p-12 text-center"
+          style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
+        >
           <FlaskConical size={36} className="mx-auto text-[var(--text-muted)] mb-3" />
           <h3 className="text-sm font-bold text-[var(--text-primary)]">No scenarios found</h3>
           <p className="text-xs text-[var(--text-muted)] mt-1 max-w-sm mx-auto">
-            {search ? 'Try adjusting your search query.' : 'Create your first test scenario or select a template to begin.'}
+            {search ? 'Try adjusting your search query.' : 'Create your first test scenario or select a template above.'}
           </p>
         </div>
       )}
 
+      {/* Modals */}
       <ScenarioCriteriaModal
         scenario={selectedCriteriaScenario}
         onClose={() => setSelectedCriteriaScenario(null)}
         onRunTest={onRunScenario}
+      />
+
+      <EditScenarioModal
+        scenario={editingScenario}
+        isOpen={Boolean(editingScenario)}
+        onClose={() => setEditingScenario(null)}
+        onSave={(updated) => {
+          onUpdateScenario?.(updated);
+          setEditingScenario(null);
+        }}
       />
     </div>
   );

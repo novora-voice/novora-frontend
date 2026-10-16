@@ -145,7 +145,10 @@ export const EvaluationsView: React.FC<EvaluationsViewProps> = ({
         selectedReports={selectedReports}
         isOpen={isBatchOpen}
         onClose={() => setIsBatchOpen(false)}
-        onRerunReport={onSelectEvaluation}
+        onInspectReport={(rep) => {
+          setIsBatchOpen(false);
+          onSelectEvaluation(rep);
+        }}
       />
     </div>
   );

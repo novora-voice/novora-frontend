@@ -2,13 +2,15 @@
 
 import React from 'react';
 import { EvaluationScenario } from '@/types/api';
-import { FlaskConical, Play, Eye, Copy, CheckCircle2 } from 'lucide-react';
+import { FlaskConical, Play, Eye, Copy, Edit2, History, CheckCircle2 } from 'lucide-react';
 
 interface ScenarioCardProps {
   scenario: EvaluationScenario;
   onRun: (id: string) => void;
   onViewCriteria: (scenario: EvaluationScenario) => void;
   onDuplicate?: (scenario: EvaluationScenario) => void;
+  onEdit?: (scenario: EvaluationScenario) => void;
+  onViewHistory?: (scenarioId: string) => void;
 }
 
 export const ScenarioCard: React.FC<ScenarioCardProps> = ({
@@ -16,6 +18,8 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({
   onRun,
   onViewCriteria,
   onDuplicate,
+  onEdit,
+  onViewHistory,
 }) => {
   return (
     <div
@@ -29,19 +33,23 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex items-center gap-2.5">
             <div
-              className="flex h-9 w-9 items-center justify-center rounded-xl"
+              className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
               style={{ backgroundColor: 'var(--primary-subtle)', color: 'var(--primary)' }}
             >
               <FlaskConical size={18} />
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-[var(--text-primary)]">{scenario.name}</h3>
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">{scenario.id}</span>
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-[var(--text-primary)] truncate">
+                {scenario.name}
+              </h3>
+              <span className="text-[10px] text-[var(--text-muted)] font-mono truncate block">
+                {scenario.id}
+              </span>
             </div>
           </div>
 
           <span
-            className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+            className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0"
             style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}
           >
             {scenario.rules?.length || 0} Rules
@@ -69,21 +77,47 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({
         )}
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t text-xs" style={{ borderColor: 'var(--border-color)' }}>
-        <button
-          onClick={() => onViewCriteria(scenario)}
-          className="flex items-center gap-1.5 font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-        >
-          <Eye size={13} />
-          <span>Criteria</span>
-        </button>
-
+      <div
+        className="flex items-center justify-between pt-3 border-t text-xs"
+        style={{ borderColor: 'var(--border-color)' }}
+      >
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => onViewCriteria(scenario)}
+            className="flex items-center gap-1 font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
+            <Eye size={13} />
+            <span>Criteria</span>
+          </button>
+
+          {onViewHistory && (
+            <button
+              onClick={() => onViewHistory(scenario.id)}
+              title="View Scenario History"
+              className="flex items-center gap-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            >
+              <History size={13} />
+              <span>Runs</span>
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(scenario)}
+              title="Edit Scenario"
+              className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
+            >
+              <Edit2 size={13} />
+            </button>
+          )}
+
           {onDuplicate && (
             <button
               onClick={() => onDuplicate(scenario)}
               title="Duplicate Scenario"
-              className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]"
+              className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
             >
               <Copy size={13} />
             </button>
@@ -91,7 +125,7 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({
 
           <button
             onClick={() => onRun(scenario.id)}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold text-white shadow-sm"
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold text-white shadow-sm transition-transform active:scale-95"
             style={{ backgroundColor: 'var(--primary)' }}
           >
             <Play size={12} />

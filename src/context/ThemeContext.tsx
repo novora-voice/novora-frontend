@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
+const THEME_STORAGE_KEY = 'novora_theme_v2';
 
 interface ThemeContextType {
   theme: Theme;
@@ -17,12 +18,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('novora_theme') as Theme | null;
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
     if (savedTheme === 'light' || savedTheme === 'dark') {
       setThemeState(savedTheme);
       applyTheme(savedTheme);
     } else {
-      // Default to light theme per Novora brand specification
+      // Default to the brighter dashboard palette.
       const initial: Theme = 'light';
       setThemeState(initial);
       applyTheme(initial);
@@ -43,7 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
-    localStorage.setItem('novora_theme', t);
+    localStorage.setItem(THEME_STORAGE_KEY, t);
     applyTheme(t);
   };
 

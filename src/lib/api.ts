@@ -18,10 +18,15 @@ import {
   BackendEvaluationReport,
   BackendRegressionReport,
   request,
+  setToken,
+  clearToken,
   toEvaluationReport,
 } from './apiClient';
+import { executionApi } from './executionApi';
 
 export { ApiError };
+export * from '@/types/execution';
+export { executionApi };
 
 export const novoraApi = {
   getBaseUrl(): string {
@@ -33,17 +38,21 @@ export const novoraApi = {
   },
 
   async signup(payload: SignupPayload): Promise<AuthUser> {
-    return request<AuthUser>('/api/v1/auth/signup', {
+    const resp = await request<{ access_token: string; user: AuthUser }>('/api/v1/auth/signup', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+    setToken(resp.access_token);
+    return resp.user;
   },
 
   async login(payload: LoginPayload): Promise<AuthUser> {
-    return request<AuthUser>('/api/v1/auth/login', {
+    const resp = await request<{ access_token: string; user: AuthUser }>('/api/v1/auth/login', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+    setToken(resp.access_token);
+    return resp.user;
   },
 
   async getCurrentUser(): Promise<AuthUser> {
@@ -51,9 +60,11 @@ export const novoraApi = {
   },
 
   async logout(): Promise<void> {
-    await request<{ status: string }>('/api/v1/auth/logout', {
-      method: 'POST',
-    });
+    try {
+      await request<{ status: string }>('/api/v1/auth/logout', { method: 'POST' });
+    } finally {
+      clearToken();
+    }
   },
 
   async listScenarios(limit = 50, offset = 0): Promise<EvaluationScenario[]> {
@@ -172,4 +183,6 @@ export const novoraApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  ...executionApi,
 };

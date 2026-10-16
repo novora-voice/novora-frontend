@@ -22,6 +22,24 @@ export const API_BASE_URL = (
 
 export const API_PROXY_PATH = '/api/backend';
 
+// ─── JWT Token storage ────────────────────────────────────────────────────────
+
+const TOKEN_KEY = 'novora_token';
+
+export function setToken(token: string): void {
+  if (typeof window !== 'undefined') localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function clearToken(): void {
+  if (typeof window !== 'undefined') localStorage.removeItem(TOKEN_KEY);
+}
+
+
 export interface BackendEvidenceReference {
   message_id: string;
   speaker: SpeakerRole;
@@ -74,11 +92,17 @@ export async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_PROXY_PATH}${endpoint}`;
-  const headers = {
+
+  // Inject JWT token from localStorage
+  const token = getToken();
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...(options.headers || {}),
+    ...(options.headers as Record<string, string> || {}),
   };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   try {
     const res = await fetch(url, {

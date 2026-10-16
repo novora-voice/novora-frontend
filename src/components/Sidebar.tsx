@@ -81,13 +81,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-60 flex-col border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 backdrop-blur-2xl ${
+        className={`sidebar-glass fixed top-0 bottom-0 left-0 z-50 flex w-60 flex-col border-r transition-transform duration-300 ease-in-out lg:translate-x-0 ${ 
           isOpenMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: 'var(--border-color)',
-        }}
       >
         <div className="flex h-16 items-center justify-between border-b px-5" style={{ borderColor: 'var(--border-color)' }}>
           <div className="relative h-9 w-32">

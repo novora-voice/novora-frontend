@@ -3,7 +3,7 @@
 import React from 'react';
 import { VoiceProvider } from '@/types/api';
 import { EvaluatorCriterionState } from './WizardStep4Criteria';
-import { Play, AlertTriangle, ShieldCheck, CheckCircle2, Loader2, Bot } from 'lucide-react';
+import { Play, AlertTriangle, ShieldCheck, CheckCircle2, Loader2, Bot, Scale, Terminal } from 'lucide-react';
 
 interface WizardStep5RunProps {
   provider: VoiceProvider;
@@ -12,11 +12,24 @@ interface WizardStep5RunProps {
   executionMode: 'sandbox' | 'live';
   criteria: EvaluatorCriterionState[];
   isSubmitting: boolean;
+  progressStage?: number;
   liveConfirmed: boolean;
   onLiveConfirmedChange: (val: boolean) => void;
   onRunTest: () => void;
   error: string | null;
+  agentId?: string;
+  userInstructions?: string;
 }
+
+const STAGES = [
+  '1. Preparing test & provider session handshake',
+  '2. Starting runtime & ghost-caller session',
+  '3. Subscribing to provider event stream',
+  '4. Observing agent turns & recording tool calls',
+  '5. Evaluating deterministic rules in application code',
+  '6. Evaluating custom LLM criteria (DeepSeek / Llama 3.3)',
+  '7. Finalizing dual-layer evaluation report',
+];
 
 export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
   provider,
@@ -25,39 +38,52 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
   executionMode,
   criteria,
   isSubmitting,
+  progressStage = 1,
   liveConfirmed,
   onLiveConfirmedChange,
   onRunTest,
   error,
+  agentId,
+  userInstructions,
 }) => {
-  const activeCount = criteria.filter((c) => c.enabled).length;
+  const deterministicCount = criteria.filter((c) => c.type === 'deterministic' && c.enabled).length;
+  const judgeCount = criteria.filter((c) => c.type === 'llm_judge' && c.enabled).length;
 
   return (
     <div className="space-y-4 text-xs">
       <div>
-        <h3 className="text-sm font-bold text-[var(--text-primary)]">Step 5 — Review & Launch Evaluation</h3>
-        <p className="text-xs text-[var(--text-secondary)]">Verify test configuration before initiating evaluation execution</p>
+        <h3 className="text-sm font-bold text-[var(--text-primary)]">Step 6 — Review Configuration &amp; Launch Evaluation</h3>
+        <p className="text-xs text-[var(--text-secondary)]">Verify test parameters, deterministic checks, and LLM rubrics before execution</p>
       </div>
 
       <div className="rounded-xl border p-4 space-y-3" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)' }}>
         <div className="grid grid-cols-2 gap-3 pb-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
           <div>
-            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Provider</span>
+            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Provider Platform</span>
             <span className="text-xs font-bold text-[var(--text-primary)] capitalize">{provider}</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Agent Target</span>
-            <span className="text-xs font-bold text-[var(--text-primary)]">{agentName || 'Default Agent'}</span>
+            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Agent Target &amp; ID</span>
+            <span className="text-xs font-bold text-[var(--text-primary)] font-mono">{agentId || agentName || 'Default Target'}</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Selected Scenario</span>
+            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Evaluation Scenario</span>
             <span className="text-xs font-bold text-[var(--text-primary)]">{scenarioName}</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Active Checks</span>
-            <span className="text-xs font-bold text-[var(--text-primary)]">{activeCount} Rules Enabled</span>
+            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Dual-Layer Checks</span>
+            <span className="text-xs font-bold text-[var(--text-primary)]">
+              {deterministicCount} Deterministic • {judgeCount} LLM Rubrics
+            </span>
           </div>
         </div>
+
+        {userInstructions && (
+          <div className="pb-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
+            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block mb-0.5">Plain-English Test Instructions</span>
+            <p className="text-[11px] text-[var(--text-secondary)] italic font-serif">&quot;{userInstructions}&quot;</p>
+          </div>
+        )}
 
         <div>
           <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block mb-1">Execution Mode</span>
@@ -65,7 +91,7 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
             <span className={`inline-block h-2 w-2 rounded-full ${executionMode === 'live' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
             <span className="font-semibold text-[var(--text-primary)] capitalize">{executionMode} Environment</span>
             <span className="text-[11px] text-[var(--text-muted)]">
-              {executionMode === 'live' ? 'Calls real outbound carrier / phone numbers' : 'Simulated execution test session'}
+              {executionMode === 'live' ? 'Contacts real telephony carrier / minutes' : 'Programmatic ghost caller testing session'}
             </span>
           </div>
         </div>
@@ -75,10 +101,10 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
         <div className="rounded-xl border p-3 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 space-y-2">
           <div className="flex items-center gap-2 font-bold text-xs">
             <AlertTriangle size={15} />
-            <span>Explicit Confirmation Required for Live Calling</span>
+            <span>Explicit Confirmation Required for Live Telephony Execution</span>
           </div>
           <p className="text-[11px]">
-            Live test mode connects to real telephony carriers and provider minutes. Confirm you have authority to run this test.
+            Live test mode connects to real telephony lines and provider minutes. Explicit user authorization is required before placing outbound calls.
           </p>
           <label className="flex items-center gap-2 pt-1 cursor-pointer font-semibold">
             <input
@@ -87,8 +113,48 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
               onChange={(e) => onLiveConfirmedChange(e.target.checked)}
               className="rounded text-amber-600 focus:ring-0"
             />
-            <span>I authorize Novora to initiate this live test evaluation</span>
+            <span>I authorize Novora to initiate this live test evaluation against configured provider</span>
           </label>
+        </div>
+      )}
+
+      {isSubmitting && (
+        <div className="rounded-xl border p-3.5 space-y-2.5 bg-[var(--primary-subtle)] border-[var(--primary)]/30">
+          <div className="flex items-center justify-between text-[11px] font-bold text-[var(--primary)]">
+            <span className="flex items-center gap-1.5">
+              <Loader2 size={13} className="animate-spin" />
+              <span>Ghost Caller Evaluation Runtime Active</span>
+            </span>
+            <span>Stage {Math.min(progressStage, STAGES.length)}/{STAGES.length}</span>
+          </div>
+
+          <div className="space-y-1.5 text-[11px]">
+            {STAGES.map((stageText, idx) => {
+              const stageNum = idx + 1;
+              const isDone = progressStage > stageNum;
+              const isCurrent = progressStage === stageNum;
+              return (
+                <div
+                  key={stageNum}
+                  className={`flex items-center gap-2 ${
+                    isDone || isCurrent ? 'text-[var(--text-primary)] font-semibold' : 'text-[var(--text-muted)]'
+                  }`}
+                >
+                  <CheckCircle2
+                    size={12}
+                    className={
+                      isDone
+                        ? 'text-emerald-500'
+                        : isCurrent
+                        ? 'text-[var(--primary)] animate-pulse'
+                        : 'text-transparent border rounded-full'
+                    }
+                  />
+                  <span>{stageText}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -109,12 +175,12 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
           {isSubmitting ? (
             <>
               <Loader2 size={15} className="animate-spin" />
-              <span>Evaluating Against Novora Engine...</span>
+              <span>Running Ghost-Caller Evaluation...</span>
             </>
           ) : (
             <>
               <Play size={15} />
-              <span>Execute Evaluation Now</span>
+              <span>Launch Evaluation Run</span>
             </>
           )}
         </button>
