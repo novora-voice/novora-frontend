@@ -21,7 +21,7 @@ export const AuthHero: React.FC = () => {
     >
       <div className="relative z-10">
         <div className="relative h-10 w-36 mb-12">
-          <Image src="/novora-logo-dark.png" alt="Novora Logo" fill priority sizes="144px" className="object-contain object-left" />
+          <Image src="/novora-logo-light.png" alt="Novora Logo" fill priority sizes="144px" className="object-contain object-left" />
         </div>
 
         <div className="max-w-md">
