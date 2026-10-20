@@ -22,11 +22,13 @@ export const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
 }) => {
   if (!agent) return null;
 
-  const agentEvals = evaluations.filter(
-    (evaluation) =>
-      evaluation.agent_name?.trim().toLocaleLowerCase() === agent.name.trim().toLocaleLowerCase() ||
-      (!evaluation.agent_name && Boolean(agent.agent_id_ref) && evaluation.agent_id === agent.agent_id_ref)
-  );
+  const agentEvals = [...new Map(evaluations.filter((evaluation) =>
+    agent.agent_id_ref
+      ? evaluation.agent_id === agent.agent_id_ref
+        || (!evaluation.agent_id && evaluation.agent_name?.trim().toLocaleLowerCase() === agent.name.trim().toLocaleLowerCase())
+      : evaluation.agent_name?.trim().toLocaleLowerCase() === agent.name.trim().toLocaleLowerCase()
+  ).map((evaluation) => [evaluation.id, evaluation])).values()]
+    .sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime());
 
   return (
     <div
@@ -68,7 +70,7 @@ export const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
             </div>
             <div className="rounded-xl border p-3" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)' }}>
               <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">Agent Ref</span>
-              <span className="text-xs font-mono text-[var(--text-primary)] mt-1 block truncate">{agent.agent_id_ref || 'Default'}</span>
+              <span className="text-xs font-mono text-[var(--text-primary)] mt-1 block truncate">{agent.agent_id_ref || 'No agent ID configured'}</span>
             </div>
           </div>
 

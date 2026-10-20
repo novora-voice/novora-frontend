@@ -13,7 +13,6 @@ import { KnowledgeView } from '@/components/views/KnowledgeView';
 import { SettingsView } from '@/components/views/SettingsView';
 import { AuthUser, EvaluationReport, EvaluationScenario, VoiceAgent, VoiceProvider } from '@/types/api';
 import { ApiError, novoraApi } from '@/lib/api';
-import { SEED_SCENARIOS, SEED_EVALUATIONS, SEED_AGENTS } from '@/lib/mockData';
 import { EvaluationDetailModal } from '@/components/evaluations/EvaluationDetailModal';
 import { ProviderEvaluationWizardModal } from '@/components/wizard/ProviderEvaluationWizardModal';
 import { NewScenarioModal } from '@/components/scenarios/NewScenarioModal';
@@ -28,11 +27,12 @@ export default function DashboardPage() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [scenarios, setScenarios] = useState<EvaluationScenario[]>([]);
   const [evaluations, setEvaluations] = useState<EvaluationReport[]>([]);
-  const [agents, setAgents] = useState<VoiceAgent[]>(SEED_AGENTS);
+  const [agents, setAgents] = useState<VoiceAgent[]>([]);
   const [isBackendConnected, setIsBackendConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [authVerificationFailed, setAuthVerificationFailed] = useState(false);
   const [selectedEvaluation, setSelectedEvaluation] = useState<EvaluationReport | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isNewScenarioOpen, setIsNewScenarioOpen] = useState(false);
@@ -42,6 +42,7 @@ export default function DashboardPage() {
   const [isProviderRequiredOpen, setIsProviderRequiredOpen] = useState(false);
   const [initialScenarioId, setInitialScenarioId] = useState<string | undefined>();
   const [initialProvider, setInitialProvider] = useState<VoiceProvider | undefined>();
+  const [initialAgent, setInitialAgent] = useState<VoiceAgent | undefined>();
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -50,6 +51,7 @@ export default function DashboardPage() {
   };
 
   const openNewEvaluation = () => {
+    setInitialAgent(undefined);
     setInitialScenarioId(undefined);
     setInitialProvider(undefined);
     setIsWizardOpen(true);
@@ -79,9 +81,6 @@ export default function DashboardPage() {
       } catch (err: unknown) {
         showToast(`Backend connected but fetch failed: ${err instanceof Error ? err.message : 'Unknown'}`, 'error');
       }
-    } else {
-      setScenarios(SEED_SCENARIOS);
-      setEvaluations(SEED_EVALUATIONS);
     }
     setIsLoading(false);
   }, []);
@@ -96,8 +95,7 @@ export default function DashboardPage() {
         if (err instanceof ApiError && err.status === 401) {
           router.replace('/login');
         } else {
-          setCurrentUser({ id: 'usr_local', email: 'architect@novora.internal', full_name: 'Lead Architect', created_at: new Date().toISOString() });
-          await loadData();
+          setAuthVerificationFailed(true);
         }
       } finally {
         setAuthChecked(true);
@@ -107,6 +105,15 @@ export default function DashboardPage() {
   }, [loadData, router]);
 
   if (!authChecked || !currentUser) {
+    if (authChecked && authVerificationFailed) {
+      return (
+        <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[var(--bg-primary)] p-6 text-center">
+          <p className="text-sm font-medium text-[var(--text-primary)]">Unable to verify your session.</p>
+          <p className="text-sm text-[var(--text-muted)]">Check the backend connection and try signing in again.</p>
+          <button className="text-sm font-semibold text-blue-600" onClick={() => router.replace('/login')}>Go to sign in</button>
+        </main>
+      );
+    }
     return (
       <main className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] p-6">
         <p className="text-sm font-medium text-[var(--text-muted)]">Verifying Novora session...</p>
@@ -161,12 +168,14 @@ export default function DashboardPage() {
                 evaluations={evaluations}
                 onAddAgent={(ag) => { setAgents([ag, ...agents]); showToast(`Agent "${ag.name}" configured!`, 'success'); }}
                 onRunTest={(ag) => {
+                  setInitialAgent(ag);
                   setInitialProvider(ag.provider as VoiceProvider);
                   setInitialScenarioId(scenarios[0]?.id);
                   setIsWizardOpen(true);
                 }}
                 onOpenEvaluationDetail={setSelectedEvaluation}
                 onSelectInfrastructureProvider={(prov) => {
+                  setInitialAgent(undefined);
                   setInitialProvider(prov);
                   setInitialScenarioId(scenarios[0]?.id);
                   setIsWizardOpen(true);
@@ -201,7 +210,7 @@ export default function DashboardPage() {
 
       <EvaluationDetailModal report={selectedEvaluation} onClose={() => setSelectedEvaluation(null)} onOpenCompare={(id) => { setSelectedEvaluation(null); setCompareBaselineId(id); setIsCompareOpen(true); }} />
       <ProviderEvaluationWizardModal
-        key={`${initialScenarioId ?? 'new'}:${initialProvider ?? 'default'}`}
+        key={`${initialScenarioId ?? 'new'}:${initialProvider ?? 'default'}:${initialAgent?.id ?? 'new-agent'}`}
         isOpen={isWizardOpen}
         onClose={(backgroundRun) => {
           setIsWizardOpen(false);
@@ -210,15 +219,13 @@ export default function DashboardPage() {
         scenarios={scenarios}
         initialScenarioId={initialScenarioId}
         initialProvider={initialProvider}
+        initialAgent={initialAgent}
         isBackendConnected={isBackendConnected}
         onScenarioCreated={(scenario) => {
           setScenarios((previous) => [scenario, ...previous.filter((item) => item.id !== scenario.id)]);
           showToast(`Scenario "${scenario.name}" saved!`, 'success');
         }}
         onEvaluationCreated={async (rep) => {
-          // The worker saves the report before marking the job complete. Re-read
-          // history so the dashboard reflects the persisted verdict, not a stale
-          // in-memory job payload.
           let savedReport = rep;
           try {
             const latest = await novoraApi.getScenarioHistory(rep.scenario_id, 1, 0);

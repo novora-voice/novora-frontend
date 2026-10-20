@@ -110,9 +110,13 @@ export const RegressionDiffModal: React.FC<RegressionDiffModalProps> = ({
               <div className="rounded-xl border p-3.5 flex items-center justify-between" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)' }}>
                 <div>
                   <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Net Verdict</span>
-                  <span className="text-xs font-bold text-[var(--text-primary)] capitalize">{diff.net_status_change}</span>
+                  <span className="text-xs font-bold text-[var(--text-primary)] capitalize">
+                    {diff.coverage_complete ? diff.net_status_change : 'Evaluation coverage incomplete'}
+                  </span>
                 </div>
-                {diff.regression_detected ? (
+                {!diff.coverage_complete ? (
+                  <StatusBadge status="INCONCLUSIVE" size="sm" />
+                ) : diff.regression_detected ? (
                   <span className="rounded-full px-2.5 py-1 text-xs font-bold bg-red-500/10 text-red-600 dark:text-red-400">
                     Regression Detected
                   </span>
@@ -122,6 +126,15 @@ export const RegressionDiffModal: React.FC<RegressionDiffModalProps> = ({
                   </span>
                 )}
               </div>
+
+              {!diff.coverage_complete && diff.coverage_issues.length > 0 && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
+                  <p className="font-bold">Comparison is inconclusive because one or more checks were missing or incompatible.</p>
+                  <ul className="mt-1 list-inside list-disc space-y-0.5 text-[11px]">
+                    {diff.coverage_issues.map((issue, index) => <li key={`${index}-${issue}`}>{issue}</li>)}
+                  </ul>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">

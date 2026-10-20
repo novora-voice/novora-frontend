@@ -117,6 +117,14 @@ export const novoraApi = {
     return reports.map(toEvaluationReport);
   },
 
+  async listEvaluationsByAgent(agentId?: string, agentName?: string, limit = 1): Promise<EvaluationReport[]> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (agentId) params.set('agent_id', agentId);
+    if (agentName) params.set('agent_name', agentName);
+    const reports = await request<BackendEvaluationReport[]>(`/api/v1/evaluations?${params.toString()}`);
+    return reports.map(toEvaluationReport);
+  },
+
   async getScenarioHistory(scenarioId: string, limit = 50, offset = 0): Promise<EvaluationReport[]> {
     const reports = await request<BackendEvaluationReport[]>(
       `/api/v1/scenarios/${encodeURIComponent(scenarioId)}/history?limit=${limit}&offset=${offset}`

@@ -88,9 +88,18 @@ frontend with `npm run dev` from `frontend/`. Provider webhook URLs shown in
 Integrations point directly at the configured backend origin.
 
 The login and signup pages use the backend's email/password endpoints. A
-successful signup or login establishes an HTTP-only session cookie; the
-dashboard checks that session on entry and protects it with a sign-out action.
-Accounts currently share the team's Novora workspace.
+successful signup or login returns a bearer token that the dashboard stores
+in browser local storage and sends with authenticated API requests. The
+dashboard checks the session on entry and protects it with a sign-out action.
+
+### Deploy with Docker on Render
+
+Create a Render Web Service from this repository with the Docker runtime and
+the root `Dockerfile`. Set `NEXT_PUBLIC_API_URL` to the deployed backend's
+public HTTPS URL in the Render service's environment before building. The
+Docker image exposes port `10000` and binds to Render's `PORT` on `0.0.0.0`.
+The frontend uses this URL for its server-side API proxy and integration
+webhook links.
 
 ---
 

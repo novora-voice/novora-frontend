@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { EvaluationReport, EvaluationScenario, VoiceProvider, RuleType } from '@/types/api';
+import { EvaluationReport, EvaluationScenario, VoiceAgent, VoiceProvider, RuleType } from '@/types/api';
 import {
   AgentConfig,
   EvaluationJobResponse,
@@ -27,6 +27,7 @@ interface ProviderEvaluationWizardModalProps {
   onScenarioCreated?: (scenario: EvaluationScenario) => void;
   initialScenarioId?: string;
   initialProvider?: VoiceProvider;
+  initialAgent?: VoiceAgent;
   isBackendConnected: boolean;
   onRequireProviderModal: () => void;
 }
@@ -43,6 +44,7 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
   onScenarioCreated,
   initialScenarioId,
   initialProvider,
+  initialAgent,
   isBackendConnected,
   onRequireProviderModal,
 }) => {
@@ -51,8 +53,8 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
   const [selectedScenario, setSelectedScenario] = useState<EvaluationScenario | ScenarioTemplate>(() => {
     return scenarios.find((s) => s.id === initialScenarioId) || SCENARIO_TEMPLATES[0];
   });
-  const [agentName, setAgentName] = useState('Front Desk Voice Assistant');
-  const [agentRefId, setAgentRefId] = useState('');
+  const [agentName, setAgentName] = useState(initialAgent?.name || 'Front Desk Voice Assistant');
+  const [agentRefId, setAgentRefId] = useState(initialAgent?.agent_id_ref || '');
   const [systemPrompt, setSystemPrompt] = useState('Authenticate customer and enforce $50 credit ceiling.');
   const [toolConfig, setToolConfig] = useState('lookup_order, process_refund');
   const [executionMode, setExecutionMode] = useState<'sandbox' | 'live'>('sandbox');
@@ -177,13 +179,15 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
         business_goal: selectedScenario.business_goal,
         success_criteria: ('success_criteria' in selectedScenario && selectedScenario.success_criteria) || activeDeterministic.map((r) => r.name),
         rules: activeDeterministic.map((r) => ({
+          id: r.rule_config_id,
           rule_type: (r.rule_type || (r.id.includes('unsupported') ? 'unsupported_completion' : r.id.includes('cap') ? 'policy_compliance' : r.id.includes('tool') ? 'expected_tool_call' : 'required_information')) as RuleType,
           name: r.name,
           description: r.description,
           parameters: {
             ...(r.parameters || {}),
-            condition: r.expected_behavior,
-            expected_behavior: r.expected_behavior,
+            ...(!r.parameters || Object.keys(r.parameters).length === 0
+              ? { condition: r.expected_behavior }
+              : {}),
             severity: r.severity,
             failure_message: r.failure_message,
           },
@@ -218,6 +222,17 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
           custom_payload: parsedPayload,
         },
         enable_llm_judge: activeJudge.length > 0,
+        llm_rubrics: activeJudge.map((criterion) => ({
+          criterion_id: criterion.id,
+          name: criterion.name,
+          description: criterion.description,
+          rubric_guidance: [
+            criterion.instructions,
+            `Expected behavior: ${criterion.expected_behavior}`,
+            criterion.failure_conditions ? `Failure conditions: ${criterion.failure_conditions}` : undefined,
+            criterion.objective ? `Objective: ${criterion.objective}` : undefined,
+          ].filter(Boolean).join('\n'),
+        })),
         user_instructions: userInstructions.trim() || undefined,
       };
 

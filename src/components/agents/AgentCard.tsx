@@ -81,9 +81,14 @@ export const AgentCard: React.FC<AgentCardProps> = ({
             {agent.recent_evaluation_status ? (
               <div className="mt-0.5">
                 <StatusBadge status={agent.recent_evaluation_status} size="sm" />
+                {agent.recent_evaluation_id && (
+                  <span className="mt-1 block truncate text-[9px] font-mono text-[var(--text-muted)]" title={`Evaluation ${agent.recent_evaluation_id}`}>
+                    #{agent.recent_evaluation_id}
+                  </span>
+                )}
               </div>
             ) : (
-              <span className="text-[11px] text-[var(--text-muted)]">None</span>
+              <span className="text-[11px] text-[var(--text-muted)]">No completed evaluation</span>
             )}
           </div>
           <div>

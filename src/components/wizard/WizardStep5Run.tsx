@@ -56,7 +56,7 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Agent Target &amp; ID</span>
-            <span className="text-xs font-bold text-[var(--text-primary)] font-mono">{agentId || agentName || 'Default Target'}</span>
+            <span className="text-xs font-bold text-[var(--text-primary)] font-mono">{agentId || 'Agent ID required'}</span>
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Evaluation Scenario</span>

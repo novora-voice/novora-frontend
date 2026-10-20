@@ -97,9 +97,11 @@ export const WizardStepPayloadConfig: React.FC<WizardStepPayloadConfigProps> = (
     setSelectedTemplateId(tmpl.id);
     const updated = { ...tmpl.payload };
     if (provider === 'vapi') {
-      updated.assistantId = agentId || updated.assistantId || 'asst_vapi_default';
+      if (agentId.trim()) updated.assistantId = agentId.trim();
+      else delete updated.assistantId;
     } else if (provider === 'retell') {
-      updated.agent_id = agentId || updated.agent_id || 'agent_retell_default';
+      if (agentId.trim()) updated.agent_id = agentId.trim();
+      else delete updated.agent_id;
     }
     onPayloadJsonChange(JSON.stringify(updated, null, 2));
     onValidationStatusChange(true);

@@ -37,6 +37,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     color = 'var(--status-warning)';
     Icon = AlertCircle;
     label = 'Inconclusive';
+  } else if (norm === 'NOT_EVALUATED') {
+    bg = 'var(--status-inconclusive-bg)';
+    color = 'var(--text-muted)';
+    Icon = HelpCircle;
+    label = 'Not evaluated';
   } else if (norm === 'UNCHANGED') {
     bg = 'var(--status-inconclusive-bg)';
     color = 'var(--text-muted)';

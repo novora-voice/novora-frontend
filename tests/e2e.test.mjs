@@ -2,15 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const API_BASE = process.env.NOVORA_API_BASE_URL || 'http://127.0.0.1:8000';
-let sessionCookie = '';
+let accessToken = '';
 
 async function apiFetch(path, options = {}) {
   const headers = new Headers(options.headers);
-  if (sessionCookie) headers.set('Cookie', sessionCookie);
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const setCookie = response.headers.get('set-cookie');
-  if (setCookie) sessionCookie = setCookie.split(';', 1)[0];
-  return response;
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  return fetch(`${API_BASE}${path}`, { ...options, headers });
 }
 
 test('End-to-End: Signup and session authentication', async () => {
@@ -24,8 +21,10 @@ test('End-to-End: Signup and session authentication', async () => {
     }),
   });
   assert.equal(response.status, 201);
-  assert.ok(sessionCookie.startsWith('novora_session='));
-  assert.match(response.headers.get('set-cookie'), /httponly/i);
+  const signup = await response.json();
+  assert.equal(typeof signup.access_token, 'string');
+  assert.ok(signup.access_token.length > 0);
+  accessToken = signup.access_token;
 
   const currentUser = await apiFetch('/api/v1/auth/me');
   assert.equal(currentUser.status, 200);

@@ -70,6 +70,13 @@ export interface TestRunExecutionRequest {
   agent: AgentConfig;
   provider_config?: Record<string, unknown>;
   enable_llm_judge?: boolean;
+  llm_rubrics?: Array<{
+    criterion_id: string;
+    name: string;
+    description: string;
+    weight?: number;
+    rubric_guidance: string;
+  }>;
   /** User's plain-English test instructions */
   user_instructions?: string;
   /** Optional scripted turns if user provided structured turns */
