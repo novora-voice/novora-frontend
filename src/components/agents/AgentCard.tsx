@@ -83,7 +83,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                 <StatusBadge status={agent.recent_evaluation_status} size="sm" />
               </div>
             ) : (
-              <span className="text-[11px] text-[var(--text-muted)]">No evaluations yet</span>
+              <span className="text-[11px] text-[var(--text-muted)]">None</span>
             )}
           </div>
           <div>

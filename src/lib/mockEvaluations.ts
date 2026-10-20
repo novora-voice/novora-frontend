@@ -11,7 +11,6 @@ export const SEED_AGENTS: VoiceAgent[] = [
     system_prompt: 'You are Novora Front Desk concierge. Greet customers warmly and answer inquiries.',
     execution_mode: 'sandbox',
     created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
-    recent_evaluation_status: 'PASS',
     last_activity_at: new Date(Date.now() - 3600000 * 2).toISOString(),
   },
   {
@@ -24,7 +23,6 @@ export const SEED_AGENTS: VoiceAgent[] = [
     system_prompt: 'Collect order details and verify return eligibility under $50 limit.',
     execution_mode: 'sandbox',
     created_at: new Date(Date.now() - 86400000 * 6).toISOString(),
-    recent_evaluation_status: 'PASS',
     last_activity_at: new Date(Date.now() - 3600000 * 5).toISOString(),
   },
   {
@@ -36,7 +34,6 @@ export const SEED_AGENTS: VoiceAgent[] = [
     agent_id_ref: 'session_aai_triage',
     execution_mode: 'sandbox',
     created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
-    recent_evaluation_status: 'PASS',
     last_activity_at: new Date(Date.now() - 86400000 * 1).toISOString(),
   },
   {
@@ -48,7 +45,6 @@ export const SEED_AGENTS: VoiceAgent[] = [
     agent_id_ref: 'agent_retell_pager_12',
     execution_mode: 'sandbox',
     created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    recent_evaluation_status: 'FAIL',
     last_activity_at: new Date(Date.now() - 3600000 * 12).toISOString(),
   },
 ];

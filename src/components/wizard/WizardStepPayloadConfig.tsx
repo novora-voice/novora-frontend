@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { VoiceProvider } from '@/types/api';
 import {
   PayloadPipelineResult,
@@ -11,13 +11,11 @@ import { novoraApi } from '@/lib/api';
 import {
   Sparkles,
   Code2,
-  FileText,
   CheckCircle2,
   AlertTriangle,
   Loader2,
   RefreshCw,
   Layers,
-  ArrowRight,
 } from 'lucide-react';
 
 interface WizardStepPayloadConfigProps {
@@ -34,11 +32,29 @@ interface WizardStepPayloadConfigProps {
   onPipelineResultChange: (res: PayloadPipelineResult | null) => void;
 }
 
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseProviderPayload(value: string): Record<string, unknown> | undefined {
+  if (!value.trim()) return undefined;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch (err: unknown) {
+    throw new Error(`Invalid JSON syntax: ${err instanceof Error ? err.message : 'Malformed syntax'}`);
+  }
+
+  if (!isJsonObject(parsed)) {
+    throw new Error('Provider payload must be a JSON object.');
+  }
+  return parsed;
+}
+
 export const WizardStepPayloadConfig: React.FC<WizardStepPayloadConfigProps> = ({
   provider,
   agentId,
-  scenarioName,
-  scenarioGoal,
   userInstructions,
   payloadJson,
   onPayloadJsonChange,
@@ -54,6 +70,12 @@ export const WizardStepPayloadConfig: React.FC<WizardStepPayloadConfigProps> = (
   const [isValidating, setIsValidating] = useState(false);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [judgeVerdict, setJudgeVerdict] = useState<PayloadJudgeVerdict | null>(null);
+  const [validatedPayload, setValidatedPayload] = useState<Record<string, unknown> | null>(null);
+  const payloadJsonRef = useRef(payloadJson);
+
+  useEffect(() => {
+    payloadJsonRef.current = payloadJson;
+  }, [payloadJson]);
 
   // Load templates on provider change
   useEffect(() => {
@@ -61,16 +83,14 @@ export const WizardStepPayloadConfig: React.FC<WizardStepPayloadConfigProps> = (
       .getPayloadTemplates(provider)
       .then((tmpl) => {
         setTemplates(tmpl);
-        if (tmpl.length > 0 && !selectedTemplateId) {
+        if (tmpl.length > 0 && !payloadJsonRef.current.trim()) {
           setSelectedTemplateId(tmpl[0].id);
-          if (!payloadJson) {
-            onPayloadJsonChange(JSON.stringify(tmpl[0].payload, null, 2));
-            onValidationStatusChange(true);
-          }
+          onPayloadJsonChange(JSON.stringify(tmpl[0].payload, null, 2));
+          onValidationStatusChange(true);
         }
       })
       .catch(() => {});
-  }, [provider]);
+  }, [provider, onPayloadJsonChange, onValidationStatusChange]);
 
   // Handle template selection
   const handleSelectTemplate = (tmpl: PayloadTemplate) => {
@@ -83,6 +103,9 @@ export const WizardStepPayloadConfig: React.FC<WizardStepPayloadConfigProps> = (
     }
     onPayloadJsonChange(JSON.stringify(updated, null, 2));
     onValidationStatusChange(true);
+    setValidatedPayload(null);
+    setJudgeVerdict(null);
+    onPipelineResultChange(null);
     setJsonError(null);
   };
 
@@ -95,14 +118,17 @@ export const WizardStepPayloadConfig: React.FC<WizardStepPayloadConfigProps> = (
 
     setIsGenerating(true);
     setJsonError(null);
+    setValidatedPayload(null);
+    setJudgeVerdict(null);
+    onValidationStatusChange(false);
 
     let parsedCustom: Record<string, unknown> | undefined;
-    if (payloadJson.trim()) {
-      try {
-        parsedCustom = JSON.parse(payloadJson);
-      } catch {
-        // use instructions instead
-      }
+    try {
+      parsedCustom = parseProviderPayload(payloadJson);
+    } catch (err: unknown) {
+      setJsonError(err instanceof Error ? err.message : 'Invalid provider JSON.');
+      onValidationStatusChange(false);
+      return;
     }
 
     try {
@@ -114,6 +140,7 @@ export const WizardStepPayloadConfig: React.FC<WizardStepPayloadConfigProps> = (
       });
 
       onPipelineResultChange(res);
+      setValidatedPayload(res.final_payload);
       if (res.final_payload && Object.keys(res.final_payload).length > 0) {
         onPayloadJsonChange(JSON.stringify(res.final_payload, null, 2));
       }
@@ -136,20 +163,34 @@ export const WizardStepPayloadConfig: React.FC<WizardStepPayloadConfigProps> = (
   // Validate custom JSON
   const handleValidateCustomJson = async () => {
     setJsonError(null);
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(payloadJson);
-    } catch (err: unknown) {
-      setJsonError(`Invalid JSON syntax: ${err instanceof Error ? err.message : 'Malformed syntax'}`);
-      onValidationStatusChange(false);
+    setJudgeVerdict(null);
+    onValidationStatusChange(false);
+    if (!agentId.trim()) {
+      setValidatedPayload(null);
+      setJsonError('Agent ID is required before validating a provider payload.');
       return;
     }
 
+    let parsed: Record<string, unknown> | undefined;
+    try {
+      parsed = parseProviderPayload(payloadJson);
+    } catch (err: unknown) {
+      setValidatedPayload(null);
+      setJsonError(err instanceof Error ? err.message : 'Invalid provider JSON.');
+      return;
+    }
+    if (!parsed) {
+      setValidatedPayload(null);
+      setJsonError('Enter a provider JSON object before validating.');
+      return;
+    }
+
+    setValidatedPayload(parsed);
     setIsValidating(true);
     try {
       const verdict = await novoraApi.validatePayload({
         provider,
-        agent_id: agentId.trim() || 'target_agent',
+        agent_id: agentId.trim(),
         payload: parsed,
         user_instructions: userInstructions,
       });
@@ -338,11 +379,45 @@ export const WizardStepPayloadConfig: React.FC<WizardStepPayloadConfigProps> = (
           onChange={(e) => {
             onPayloadJsonChange(e.target.value);
             onValidationStatusChange(false);
+            setValidatedPayload(null);
+            setJudgeVerdict(null);
+            setJsonError(null);
           }}
           className="w-full rounded-xl border p-2.5 text-xs font-mono text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
           style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)' }}
         />
       </div>
+
+      {validatedPayload && (
+        <div
+          className="rounded-xl border p-3 space-y-2"
+          style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)' }}
+          aria-live="polite"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <strong className="text-[11px] text-[var(--text-primary)]">
+              {provider.toUpperCase()} JSON submitted for validation
+            </strong>
+            <span className="text-[10px] font-mono text-[var(--text-muted)]">
+              Agent ID: {agentId || 'not set'}
+            </span>
+          </div>
+          <pre className="max-h-56 overflow-auto rounded-lg border p-2 text-[11px] font-mono text-[var(--text-primary)] whitespace-pre-wrap break-words"
+            style={{ borderColor: 'var(--border-color)' }}
+          >
+            {JSON.stringify(validatedPayload, null, 2)}
+          </pre>
+          <p className="text-[10px] text-[var(--text-muted)]">
+            The evaluation test targets the provider agent ID above; this exact JSON is attached to the test request.
+          </p>
+          {judgeVerdict && (
+            <p className="text-[11px] text-[var(--text-secondary)]">
+              Provider payload validation: <strong className="capitalize">{judgeVerdict.decision}</strong>
+              {' — '}{judgeVerdict.feedback}
+            </p>
+          )}
+        </div>
+      )}
 
       {jsonError && (
         <div className="rounded-xl border p-3 bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 flex items-start gap-2">

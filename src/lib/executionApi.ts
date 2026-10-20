@@ -2,7 +2,10 @@ import {
   TestRunExecutionRequest,
   TestRunResponse,
   TestRun,
+  EvaluationJobResponse,
   ProviderManifest,
+  ProviderIntegration,
+  IntegrationHealth,
   BatchCreateRequest,
   BatchEvaluation,
 } from '@/types/execution';
@@ -19,6 +22,23 @@ interface BackendTestRunResponse {
 }
 
 export const executionApi = {
+  async enqueueTestRun(req: TestRunExecutionRequest): Promise<EvaluationJobResponse> {
+    return request<EvaluationJobResponse>('/api/v1/test-runs/jobs', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async getEvaluationJob(id: string): Promise<EvaluationJobResponse> {
+    const job = await request<Omit<EvaluationJobResponse, 'evaluation_report'> & {
+      evaluation_report?: BackendEvaluationReport;
+    }>(`/api/v1/test-runs/jobs/${encodeURIComponent(id)}`);
+    return {
+      ...job,
+      evaluation_report: job.evaluation_report ? toEvaluationReport(job.evaluation_report) : undefined,
+    };
+  },
+
   async executeTestRun(req: TestRunExecutionRequest): Promise<TestRunResponse> {
     const raw = await request<BackendTestRunResponse>('/api/v1/test-runs', {
       method: 'POST',
@@ -72,11 +92,22 @@ export const executionApi = {
 
   async testConnectivity(
     integrationId: string
-  ): Promise<{ status: string; latency_ms?: number; message?: string }> {
-    return request<{ status: string; latency_ms?: number; message?: string }>(
+  ): Promise<IntegrationHealth> {
+    return request<IntegrationHealth>(
       `/api/v1/integrations/${encodeURIComponent(integrationId)}/test-connectivity`,
       { method: 'POST' }
     );
+  },
+
+  async listIntegrations(): Promise<ProviderIntegration[]> {
+    return request<ProviderIntegration[]>('/api/v1/integrations');
+  },
+
+  async createIntegration(payload: { provider_name: string; api_key: string }): Promise<ProviderIntegration> {
+    return request<ProviderIntegration>('/api/v1/integrations', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
   async generatePayload(req: import('@/types/execution').PayloadGenerationRequest): Promise<import('@/types/execution').PayloadPipelineResult> {

@@ -49,6 +49,12 @@ export default function DashboardPage() {
     setTimeout(() => setToast((cur) => (cur?.message === message ? null : cur)), 4000);
   };
 
+  const openNewEvaluation = () => {
+    setInitialScenarioId(undefined);
+    setInitialProvider(undefined);
+    setIsWizardOpen(true);
+  };
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     let connected = false;
@@ -126,7 +132,7 @@ export default function DashboardPage() {
           <Navbar
             activeTab={activeTab}
             onOpenMobile={() => setIsMobileSidebarOpen(true)}
-            onNewEvaluation={() => setIsWizardOpen(true)}
+            onNewEvaluation={openNewEvaluation}
             onNewScenario={() => setIsNewScenarioOpen(true)}
             onRefresh={loadData}
             onLogout={async () => { await novoraApi.logout().catch(() => {}); router.replace('/login'); }}
@@ -142,7 +148,7 @@ export default function DashboardPage() {
                 agents={agents}
                 isBackendConnected={isBackendConnected}
                 onSelectEvaluation={setSelectedEvaluation}
-                onOpenNewEvaluation={() => setIsWizardOpen(true)}
+                onOpenNewEvaluation={openNewEvaluation}
                 onOpenNewScenario={() => setIsNewScenarioOpen(true)}
                 onNavigateTab={setActiveTab}
                 onOpenCompare={() => setIsCompareOpen(true)}
@@ -172,7 +178,7 @@ export default function DashboardPage() {
                 evaluations={evaluations}
                 scenarios={scenarios}
                 onSelectEvaluation={setSelectedEvaluation}
-                onOpenNewEvaluation={() => setIsWizardOpen(true)}
+                onOpenNewEvaluation={openNewEvaluation}
                 onOpenCompare={(baselineId) => { setCompareBaselineId(baselineId); setIsCompareOpen(true); }}
               />
             )}
@@ -195,20 +201,38 @@ export default function DashboardPage() {
 
       <EvaluationDetailModal report={selectedEvaluation} onClose={() => setSelectedEvaluation(null)} onOpenCompare={(id) => { setSelectedEvaluation(null); setCompareBaselineId(id); setIsCompareOpen(true); }} />
       <ProviderEvaluationWizardModal
+        key={`${initialScenarioId ?? 'new'}:${initialProvider ?? 'default'}`}
         isOpen={isWizardOpen}
-        onClose={() => setIsWizardOpen(false)}
+        onClose={(backgroundRun) => {
+          setIsWizardOpen(false);
+          if (backgroundRun) showToast('Evaluation continues in the background. Its report will open when it finishes.', 'info');
+        }}
         scenarios={scenarios}
         initialScenarioId={initialScenarioId}
         initialProvider={initialProvider}
         isBackendConnected={isBackendConnected}
-        onEvaluationCreated={(rep) => {
-          setEvaluations([rep, ...evaluations]);
-          setSelectedEvaluation(rep);
-          showToast(`Evaluation finished! Verdict: ${rep.overall_status}`, 'success');
+        onScenarioCreated={(scenario) => {
+          setScenarios((previous) => [scenario, ...previous.filter((item) => item.id !== scenario.id)]);
+          showToast(`Scenario "${scenario.name}" saved!`, 'success');
+        }}
+        onEvaluationCreated={async (rep) => {
+          // The worker saves the report before marking the job complete. Re-read
+          // history so the dashboard reflects the persisted verdict, not a stale
+          // in-memory job payload.
+          let savedReport = rep;
+          try {
+            const latest = await novoraApi.getScenarioHistory(rep.scenario_id, 1, 0);
+            savedReport = latest.find((item) => item.id === rep.id) ?? await novoraApi.getEvaluation(rep.id);
+          } catch {
+            // Keep the report returned by the job visible if the follow-up read fails.
+          }
+          setEvaluations((previous) => [savedReport, ...previous.filter((item) => item.id !== savedReport.id)]);
+          setSelectedEvaluation(savedReport);
+          showToast(`Evaluation finished! Verdict: ${savedReport.overall_status}`, savedReport.overall_status === 'INCONCLUSIVE' ? 'info' : 'success');
         }}
         onRequireProviderModal={() => setIsProviderRequiredOpen(true)}
       />
-      {isNewScenarioOpen && <NewScenarioModal onClose={() => setIsNewScenarioOpen(false)} onScenarioCreated={(scen) => { setScenarios([scen, ...scenarios]); showToast(`Scenario "${scen.name}" created!`, 'success'); }} />}
+      {isNewScenarioOpen && <NewScenarioModal onClose={() => setIsNewScenarioOpen(false)} onScenarioCreated={(scen) => { setScenarios((previous) => [scen, ...previous]); showToast(`Scenario "${scen.name}" created!`, 'success'); }} />}
       {isCompareOpen && <RegressionDiffModal evaluations={evaluations} initialBaselineId={compareBaselineId} onClose={() => setIsCompareOpen(false)} />}
       <PlannedFeatureModal feature={plannedFeature} onClose={() => setPlannedFeature(null)} />
       <ProviderRequiredModal isOpen={isProviderRequiredOpen} onClose={() => setIsProviderRequiredOpen(false)} onNavigateToIntegrations={() => setActiveTab('integrations')} />

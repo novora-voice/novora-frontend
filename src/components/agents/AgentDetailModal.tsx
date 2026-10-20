@@ -23,7 +23,9 @@ export const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
   if (!agent) return null;
 
   const agentEvals = evaluations.filter(
-    (e) => e.summary?.toLowerCase().includes(agent.name.toLowerCase()) || e.scenario_id.includes(agent.provider)
+    (evaluation) =>
+      evaluation.agent_name?.trim().toLocaleLowerCase() === agent.name.trim().toLocaleLowerCase() ||
+      (!evaluation.agent_name && Boolean(agent.agent_id_ref) && evaluation.agent_id === agent.agent_id_ref)
   );
 
   return (

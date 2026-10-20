@@ -53,7 +53,7 @@ export const ScenariosView: React.FC<ScenariosViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div
@@ -100,7 +100,7 @@ export const ScenariosView: React.FC<ScenariosViewProps> = ({
 
       {/* Scenarios Grid */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((scen) => (
             <ScenarioCard
               key={scen.id}

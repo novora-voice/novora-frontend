@@ -55,12 +55,11 @@ export const OverviewAgentPerformance: React.FC<OverviewAgentPerformanceProps> =
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {agents.slice(0, 4).map((agent) => {
-          // Calculate agent specific evals
           const agentEvals = evaluations.filter(
-            (e) => e.summary?.toLowerCase().includes(agent.name.toLowerCase()) || e.rule_results?.length > 0
-          );
-          const totalCount = agentEvals.length || (agent.recent_evaluation_status ? 1 : 0);
-          const isPassing = agent.recent_evaluation_status === 'PASS';
+            (evaluation) => Boolean(agent.agent_id_ref) && evaluation.agent_id === agent.agent_id_ref
+          ).sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime());
+          const lastEvaluation = agentEvals[0];
+          const isPassing = lastEvaluation?.overall_status === 'PASS';
 
           return (
             <div
@@ -104,17 +103,21 @@ export const OverviewAgentPerformance: React.FC<OverviewAgentPerformanceProps> =
               <div className="flex items-center gap-2 shrink-0">
                 <div className="text-right">
                   <div className="flex items-center gap-1 justify-end">
-                    {isPassing ? (
-                      <CheckCircle2 size={13} className="text-emerald-500" />
-                    ) : (
-                      <XCircle size={13} className="text-rose-500" />
-                    )}
-                    <span className={`text-xs font-bold ${isPassing ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                      {isPassing ? 'Verified' : 'Flagged'}
+                    {lastEvaluation && (isPassing
+                      ? <CheckCircle2 size={13} className="text-emerald-500" />
+                      : <XCircle size={13} className="text-rose-500" />)}
+                    <span className={`text-xs font-bold ${
+                      !lastEvaluation
+                        ? 'text-[var(--text-muted)]'
+                        : isPassing
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-rose-600 dark:text-rose-400'
+                    }`}>
+                      {lastEvaluation?.overall_status ?? 'None'}
                     </span>
                   </div>
                   <span className="text-[10px] text-[var(--text-muted)] font-mono block">
-                    {totalCount} evals
+                    {agentEvals.length} evals
                   </span>
                 </div>
               </div>

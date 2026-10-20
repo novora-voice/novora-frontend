@@ -66,6 +66,8 @@ export interface RuleResult {
 export interface EvaluationReport {
   id: string;
   scenario_id: string;
+  agent_id?: string;
+  agent_name?: string;
   conversation_id: string;
   overall_status: EvaluationStatus;
   summary: string;
@@ -76,7 +78,7 @@ export interface EvaluationReport {
 
 export interface RuleConfig {
   id?: string;
-  rule_type: RuleType;
+  rule_type: RuleType | string;
   name?: string | null;
   description?: string;
   parameters: Record<string, unknown>;

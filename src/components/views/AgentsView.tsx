@@ -141,7 +141,16 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
               {voiceAgents.map((agent) => (
                 <AgentCard
                   key={agent.id}
-                  agent={agent}
+                  agent={{
+                    ...agent,
+                    recent_evaluation_status: evaluations
+                      .filter((evaluation) =>
+                        evaluation.agent_name?.trim().toLocaleLowerCase() === agent.name.trim().toLocaleLowerCase() ||
+                        (!evaluation.agent_name && Boolean(agent.agent_id_ref) && evaluation.agent_id === agent.agent_id_ref)
+                      )
+                      .sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime())[0]
+                      ?.overall_status,
+                  }}
                   onSelectAgent={setSelectedAgent}
                   onRunTest={onRunTest}
                 />
@@ -217,7 +226,16 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
               {infraAgents.map((agent) => (
                 <AgentCard
                   key={agent.id}
-                  agent={agent}
+                  agent={{
+                    ...agent,
+                    recent_evaluation_status: evaluations
+                      .filter((evaluation) =>
+                        evaluation.agent_name?.trim().toLocaleLowerCase() === agent.name.trim().toLocaleLowerCase() ||
+                        (!evaluation.agent_name && Boolean(agent.agent_id_ref) && evaluation.agent_id === agent.agent_id_ref)
+                      )
+                      .sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime())[0]
+                      ?.overall_status,
+                  }}
                   onSelectAgent={setSelectedAgent}
                   onRunTest={onRunTest}
                 />

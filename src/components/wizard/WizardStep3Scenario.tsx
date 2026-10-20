@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CreateScenarioPayload, EvaluationScenario, RuleConfig } from '@/types/api';
+import { CreateScenarioPayload, EvaluationScenario, RuleConfig, RuleType } from '@/types/api';
 import { SCENARIO_TEMPLATES, ScenarioTemplate } from '@/lib/scenarioTemplates';
+import { buildScenarioRules } from '@/lib/scenarioRules';
 import { novoraApi } from '@/lib/api';
-import { FlaskConical, CheckCircle2, Sparkles, Plus, Loader2, Search, AlertCircle } from 'lucide-react';
+import { RuleFormSection } from '../scenarios/RuleFormSection';
+import { FlaskConical, CheckCircle2, Sparkles, Plus, Loader2, Search, AlertCircle, Eye } from 'lucide-react';
 
 interface WizardStep3ScenarioProps {
   scenarios: EvaluationScenario[];
@@ -25,14 +27,26 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
   const [newGoal, setNewGoal] = useState('');
   const [plainEnglishDescription, setPlainEnglishDescription] = useState('');
   const [newCriteria, setNewCriteria] = useState('');
+  const [newRules, setNewRules] = useState<RuleConfig[]>([
+    { rule_type: 'required_information', name: 'Required Information', description: 'id', parameters: { required_fields: ['id'], condition: 'id', severity: 'CRITICAL' } },
+    { rule_type: 'policy_compliance', name: 'Policy Compliance', description: '50', parameters: { max_refund_amount: 50, condition: '50', severity: 'CRITICAL' } },
+  ]);
   const [isSaving, setIsSaving] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [showSelectedDetails, setShowSelectedDetails] = useState(false);
 
   const filteredScenarios = scenarios.filter(
     (s) =>
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.business_goal.toLowerCase().includes(search.toLowerCase())
   );
+  const selectedScenario = scenarios.find((scenario) => scenario.id === selectedScenarioId)
+    ?? SCENARIO_TEMPLATES.find((scenario) => scenario.template_id === selectedScenarioId);
+
+  const selectScenario = (scenario: EvaluationScenario | ScenarioTemplate) => {
+    onSelectScenario(scenario);
+    setShowSelectedDetails(false);
+  };
 
   const handleConvertPlainEnglish = () => {
     if (!plainEnglishDescription.trim()) return;
@@ -76,7 +90,7 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
       name: newName.trim(),
       business_goal: newGoal.trim(),
       success_criteria: newCriteria.split('\n').map((s) => s.trim()).filter(Boolean),
-      rules,
+      rules: buildScenarioRules(newRules),
     };
 
     try {
@@ -84,12 +98,13 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
       if (onScenarioCreated) {
         onScenarioCreated(created);
       }
-      onSelectScenario(created);
+      selectScenario(created);
       setIsCreatingNew(false);
       setNewName('');
       setNewGoal('');
       setPlainEnglishDescription('');
       setNewCriteria('');
+      setNewRules(rules);
     } catch (err: unknown) {
       setCreateError(err instanceof Error ? err.message : 'Failed to persist scenario.');
     } finally {
@@ -164,7 +179,7 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <div>
               <label className="font-semibold text-[var(--text-secondary)] block mb-1">Scenario Name *</label>
               <input
@@ -179,13 +194,13 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
             </div>
             <div>
               <label className="font-semibold text-[var(--text-secondary)] block mb-1">Business Objective *</label>
-              <input
-                type="text"
+              <textarea
+                rows={5}
                 required
                 value={newGoal}
                 onChange={(e) => setNewGoal(e.target.value)}
-                placeholder="e.g. Verify agent strictly caps credit at $50"
-                className="w-full rounded-xl border p-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                placeholder="Describe the business objective, expected outcome, and boundaries for the agent..."
+                className="w-full resize-y rounded-xl border p-2.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
                 style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
               />
             </div>
@@ -202,6 +217,33 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
               style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
             />
           </div>
+
+          <RuleFormSection
+            rules={newRules}
+            onAddRule={() => setNewRules((previous) => [
+              ...previous,
+              { rule_type: 'required_information', name: 'Required Information', description: '', parameters: { severity: 'WARNING' } },
+            ])}
+            onRemoveRule={(index) => setNewRules((previous) => previous.filter((_, idx) => idx !== index))}
+            onUpdateRule={(index, field, value) => setNewRules((previous) => previous.map((rule, idx) => {
+              if (idx !== index) return rule;
+              if (field === 'rule_type') {
+                const ruleType = value as RuleType;
+                const label = ruleType.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+                return {
+                  ...rule,
+                  rule_type: ruleType,
+                  name: label,
+                  description: '',
+                  parameters: { severity: rule.parameters.severity ?? 'WARNING', condition: '' },
+                };
+              }
+              if (field === 'condition') {
+                return { ...rule, description: String(value), parameters: { ...rule.parameters, condition: String(value) } };
+              }
+              return { ...rule, parameters: { ...rule.parameters, severity: String(value) } };
+            }))}
+          />
 
           {createError && (
             <div className="rounded-xl border p-2.5 bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 flex items-center gap-2">
@@ -246,7 +288,7 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
               return (
                 <div
                   key={scen.id}
-                  onClick={() => onSelectScenario(scen)}
+                  onClick={() => selectScenario(scen)}
                   className={`cursor-pointer rounded-xl border p-3 transition-all flex items-center justify-between ${
                     isSelected ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20 shadow-sm' : 'hover:border-[var(--border-color)]'
                   }`}
@@ -300,7 +342,7 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
             return (
               <div
                 key={tmpl.template_id}
-                onClick={() => onSelectScenario(tmpl)}
+                onClick={() => selectScenario(tmpl)}
                 className={`cursor-pointer rounded-xl border p-3 transition-all flex flex-col justify-between ${
                   isSelected
                     ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/20 shadow-sm'
@@ -324,6 +366,49 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
           })}
         </div>
       </div>
+
+      {selectedScenario && (
+        <div className="space-y-2 pt-1">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              aria-expanded={showSelectedDetails}
+              onClick={() => setShowSelectedDetails((shown) => !shown)}
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
+              style={{ borderColor: 'var(--border-color)' }}
+            >
+              <Eye size={13} />
+              Show details
+            </button>
+          </div>
+          {showSelectedDetails && (
+            <section className="space-y-2 rounded-xl border p-3" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)' }}>
+              <div>
+                <h4 className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Business goal</h4>
+                <p className="mt-1 text-[11px] text-[var(--text-secondary)]">{selectedScenario.business_goal}</p>
+              </div>
+              {selectedScenario.success_criteria.length > 0 && (
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Success criteria</h4>
+                  <ul className="mt-1 list-inside list-disc space-y-1 text-[11px] text-[var(--text-secondary)]">
+                    {selectedScenario.success_criteria.map((criterion, index) => <li key={`${index}-${criterion}`}>{criterion}</li>)}
+                  </ul>
+                </div>
+              )}
+              {selectedScenario.rules.length > 0 && (
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Scenario checks</h4>
+                  <ul className="mt-1 space-y-1.5 text-[11px] text-[var(--text-secondary)]">
+                    {selectedScenario.rules.map((rule, index) => (
+                      <li key={`${index}-${rule.name}`}><strong>{rule.name}:</strong> {rule.description}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          )}
+        </div>
+      )}
     </div>
   );
 };

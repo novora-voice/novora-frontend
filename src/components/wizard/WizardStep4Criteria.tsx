@@ -18,15 +18,17 @@ export interface EvaluatorCriterionState {
   instructions?: string;
   objective?: string;
   failure_conditions?: string;
+  parameters?: Record<string, unknown>;
 }
 
 export function getInitialCriteriaForScenario(rules?: RuleConfig[]): EvaluatorCriterionState[] {
-  const deterministic: EvaluatorCriterionState[] = (rules || []).map((r, i) => ({
+  const deterministic: EvaluatorCriterionState[] = (rules || []).map<EvaluatorCriterionState>((r, i) => ({
     id: `crit_${i}_${r.rule_type}`,
     type: 'deterministic',
-    rule_type: r.rule_type,
+    rule_type: r.rule_type as RuleType,
     name: r.name || r.rule_type,
     description: r.description || 'Deterministic policy verification',
+    parameters: r.parameters,
     expected_behavior: typeof r.parameters === 'object' ? JSON.stringify(r.parameters) : String(r.parameters),
     severity: (r.rule_type === 'unsupported_completion' || r.rule_type === 'policy_compliance') ? 'CRITICAL' : 'WARNING',
     enabled: true,

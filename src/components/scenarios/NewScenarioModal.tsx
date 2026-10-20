@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { CreateScenarioPayload, EvaluationScenario, RuleConfig } from '@/types/api';
 import { novoraApi, ApiError } from '@/lib/api';
 import { ScenarioTemplate } from '@/lib/scenarioTemplates';
+import { buildScenarioRules } from '@/lib/scenarioRules';
 import { ScenarioTemplateBar } from './ScenarioTemplateBar';
 import { RuleFormSection } from './RuleFormSection';
 import { X, FlaskConical, Plus, Loader2 } from 'lucide-react';
@@ -21,8 +22,8 @@ export const NewScenarioModal: React.FC<NewScenarioModalProps> = ({
   const [businessGoal, setBusinessGoal] = useState('');
   const [successCriteria, setSuccessCriteria] = useState('');
   const [rules, setRules] = useState<RuleConfig[]>([
-    { rule_type: 'required_information', name: 'Collect ID', description: 'Ensure customer identifier captured', parameters: { required_fields: ['id'] } },
-    { rule_type: 'policy_compliance', name: 'Policy Limit Check', description: 'Cap compensation under threshold', parameters: { max_amount: 50.0 } },
+    { rule_type: 'required_information', name: 'Required Information', description: 'id', parameters: { required_fields: ['id'], condition: 'id', severity: 'CRITICAL' } },
+    { rule_type: 'policy_compliance', name: 'Policy Compliance', description: '50', parameters: { max_refund_amount: 50.0, condition: '50', severity: 'CRITICAL' } },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export const NewScenarioModal: React.FC<NewScenarioModalProps> = ({
       name: name.trim(),
       business_goal: businessGoal.trim(),
       success_criteria: successCriteria.split('\n').map((s) => s.trim()).filter(Boolean),
-      rules,
+      rules: buildScenarioRules(rules),
     };
 
     try {
@@ -95,7 +96,7 @@ export const NewScenarioModal: React.FC<NewScenarioModalProps> = ({
             <label className="font-bold text-[var(--text-primary)] block mb-1">Business Goal *</label>
             <textarea
               required
-              rows={2}
+              rows={5}
               value={businessGoal}
               onChange={(e) => setBusinessGoal(e.target.value)}
               placeholder="Describe what the agent must achieve and boundaries to respect..."
@@ -118,9 +119,22 @@ export const NewScenarioModal: React.FC<NewScenarioModalProps> = ({
 
           <RuleFormSection
             rules={rules}
-            onAddRule={() => setRules([...rules, { rule_type: 'policy_compliance', name: 'New Rule', description: '', parameters: {} }])}
+            onAddRule={() => setRules([...rules, { rule_type: 'required_information', name: 'Required Information', description: '', parameters: { severity: 'high' } }])}
             onRemoveRule={(i) => setRules(rules.filter((_, idx) => idx !== i))}
-            onUpdateRule={(i, field, val) => setRules(rules.map((r, idx) => (idx === i ? { ...r, [field]: val } : r)))}
+            onUpdateRule={(i, field, value) => setRules(rules.map((rule, idx) => {
+              if (idx !== i) return rule;
+              if (field === 'rule_type') {
+                return {
+                  ...rule,
+                  rule_type: value,
+                  name: value,
+                };
+              }
+              if (field === 'condition') {
+                return { ...rule, description: String(value), parameters: { ...rule.parameters, condition: String(value) } };
+              }
+              return { ...rule, parameters: { ...rule.parameters, severity: String(value) } };
+            }))}
           />
 
           {error && <div className="rounded-xl border p-3 text-xs bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400">{error}</div>}

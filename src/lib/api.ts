@@ -23,6 +23,12 @@ import {
   toEvaluationReport,
 } from './apiClient';
 import { executionApi } from './executionApi';
+import {
+  HttpToolEndpointConfig,
+  HttpToolEvaluationResult,
+  ToolEndpointProvider,
+  ToolEndpointMethod,
+} from '@/types/execution';
 
 export { ApiError };
 export * from '@/types/execution';
@@ -182,6 +188,65 @@ export const novoraApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  async listToolEndpoints(): Promise<HttpToolEndpointConfig[]> {
+    return request<HttpToolEndpointConfig[]>('/api/v1/tool-endpoints');
+  },
+
+  async createToolEndpoint(payload: {
+    name: string;
+    provider: ToolEndpointProvider;
+    tool_name: string;
+    endpoint_url: string;
+    method: ToolEndpointMethod;
+    timeout_ms: number;
+    bearer_token?: string;
+  }): Promise<HttpToolEndpointConfig> {
+    return request<HttpToolEndpointConfig>('/api/v1/tool-endpoints', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateToolEndpoint(
+    id: string,
+    payload: {
+      name: string;
+      provider: ToolEndpointProvider;
+      tool_name: string;
+      endpoint_url: string;
+      method: ToolEndpointMethod;
+      timeout_ms: number;
+      bearer_token?: string;
+    }
+  ): Promise<HttpToolEndpointConfig> {
+    return request<HttpToolEndpointConfig>(`/api/v1/tool-endpoints/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteToolEndpoint(id: string): Promise<{ status: string }> {
+    return request<{ status: string }>(`/api/v1/tool-endpoints/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async evaluateToolEndpoint(
+    id: string,
+    payload: { arguments: Record<string, unknown>; agent_id?: string; allow_writes?: boolean }
+  ): Promise<HttpToolEvaluationResult> {
+    return request<HttpToolEvaluationResult>(
+      `/api/v1/tool-endpoints/${encodeURIComponent(id)}/evaluations`,
+      { method: 'POST', body: JSON.stringify(payload) }
+    );
+  },
+
+  async listToolEndpointEvaluations(id: string): Promise<HttpToolEvaluationResult[]> {
+    return request<HttpToolEvaluationResult[]>(
+      `/api/v1/tool-endpoints/${encodeURIComponent(id)}/evaluations`
+    );
   },
 
   ...executionApi,

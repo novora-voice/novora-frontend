@@ -69,9 +69,10 @@ export const WizardStep2Agent: React.FC<WizardStep2AgentProps> = ({
         </div>
 
         <div>
-          <label className="font-bold text-[var(--text-primary)] block mb-1">{provLabel.refLabel}</label>
+          <label className="font-bold text-[var(--text-primary)] block mb-1">{provLabel.refLabel.includes('*') ? provLabel.refLabel : `${provLabel.refLabel} *`}</label>
           <input
             type="text"
+            required
             value={agentRefId}
             onChange={(e) => onAgentRefIdChange(e.target.value)}
             placeholder={provLabel.placeholder}
@@ -124,10 +125,11 @@ export const WizardStep2Agent: React.FC<WizardStep2AgentProps> = ({
       <div>
         <label className="font-bold text-[var(--text-primary)] block mb-1 flex items-center gap-1.5">
           <FileText size={13} />
-          <span>Test Instructions (plain English)</span>
+          <span>Test Instructions (plain English) *</span>
         </label>
         <textarea
           rows={3}
+          required
           value={userInstructions}
           onChange={(e) => onUserInstructionsChange(e.target.value)}
           placeholder={`Describe what you want to test. For example:\n"Ask the agent for a refund after explaining the product arrived damaged."\n"Report a payment failure and check the escalation policy."`}
@@ -135,7 +137,7 @@ export const WizardStep2Agent: React.FC<WizardStep2AgentProps> = ({
           style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)' }}
         />
         <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-          These instructions become your first ghost-caller message. Leave blank to use the scenario default test case.
+          These instructions become the first ghost-caller message and are required to launch an evaluation.
         </p>
       </div>
 
