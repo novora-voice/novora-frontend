@@ -1,131 +1,72 @@
-# Novora Frontend Dashboard
+# Novora dashboard
 
-**Novora** is an enterprise evaluation, regression monitoring, and policy compliance infrastructure dashboard for conversational AI voice agents.
+The frontend is the Next.js dashboard for creating and running voice-agent evaluations, reviewing evidence, and comparing results. It is a separate repository and deployable service from the FastAPI backend.
 
-This frontend application is built by **Claude B (Senior Frontend & Product Integration Engineer)** to provide a desktop-first, highly responsive, and accessible interface with working light and dark modes that connects end-to-end to the FastAPI backend.
+## Dashboard architecture
 
----
-
-## 🎨 Design Identity & Brand Tokens
-
-The dashboard implements Novora's official design system:
-
-| Token Name | Light Scheme | Dark Scheme (Midnight) |
-| :--- | :--- | :--- |
-| **Background** | `#F8FAFC` | `#0A0F1E` |
-| **Surface** | `#FFFFFF` | `#0B1F44` |
-| **Elevated Surface** | `#F1F5F9` | `#102956` |
-| **Primary Text** | `#0B1F44` | `#E2E8F0` |
-| **Secondary Text** | `#64748B` | `#94A3B8` |
-| **Border** | `#E2E8F0` | `#1E293B` |
-| **Primary Action** | `#2563EB` (hover: `#1D4ED8`) | `#2563EB` (hover: `#3B82F6`) |
-| **Success Status** | `#15803D` (`#DCFCE7` bg) | `#22C55E` (`rgba(34,197,94,0.15)` bg) |
-| **Warning Status** | `#B45309` (`#FEF3C7` bg) | `#F59E0B` (`rgba(245,158,11,0.15)` bg) |
-| **Error Status** | `#DC2626` (`#FEE2E2` bg) | `#EF4444` (`rgba(239,68,68,0.15)` bg) |
-
-### 🖼️ Dynamic Brand Logo
-- **Light Theme**: `public/novora-logo-light.png` (Hexagonal N icon with dark navy brand typography).
-- **Dark Theme**: `public/novora-logo-dark.png` (Hexagonal N icon with white brand typography on midnight background).
-
----
-
-## 🚀 Key Modules & Capabilities
-
-1. **Platform Overview (`OverviewView`)**:
-   - Executive evaluation counts, task pass rate, detected policy violations, and active scenarios.
-   - Live activity feed showing recent evaluation reports with 1-click drill-down.
-   - Quick launch buttons for "Run Evaluation", "New Test Case", and "Regression Diff".
-
-2. **Evaluations & Evidence (`EvaluationsView`)**:
-   - Full history table filterable by status (`ALL`, `PASS`, `FAIL`, `INCONCLUSIVE`), scenario ID, and search terms.
-   - **Evidence Inspector (`EvaluationDetailModal`)**: Displays executive verdict, limitation caveats, rule cards, and exact dialogue citations (message turns, speaker roles, and character offsets).
-   - **Regression Diff Modal (`RegressionDiffModal`)**: Compares any baseline evaluation against candidate runs to detect regressions and status deltas.
-
-3. **Test Cases & Scenarios (`ScenariosView`)**:
-   - Create and inspect deterministic test scenarios (`NewScenarioModal`).
-   - Configure deterministic rule types:
-     - `required_information`: requires caller fields (e.g. `order_id`).
-     - `policy_compliance`: numeric constraints (e.g. `max_refund_amount: 50.0`).
-     - `forbidden_promises`: bans unauthorized verbal commitments.
-     - `external_action_verification`: validates proof from payment/booking records.
-   - Scenario run history drawer showing past evaluations for each scenario.
-
-4. **Provider Integrations (`IntegrationsView`)**:
-   - Distinct cards for **ElevenLabs**, **Twilio**, and **AssemblyAI**.
-   - Copyable webhook URLs matching backend ingestion endpoints.
-   - **Interactive Webhook Simulators**: 1-click dispatch of synthetic payloads to the FastAPI backend.
-   - Telephony call table displaying live records from `/api/v1/telephony/calls`.
-
-5. **Settings (`SettingsView`)**:
-   - Real-time Light / Dark mode switcher with immediate persistence in `localStorage`.
-   - Backend API base URL inspection (`http://localhost:8000`).
-   - Live backend health probe (`/health`) with latency measurement.
-   - Clear indicators for deferred/planned features (Voxia runtime, LangGraph, multi-tenancy).
-
----
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 16 (Turbopack, App Router)
-- **Language**: TypeScript 5
-- **UI & Styling**: React 19, Tailwind CSS v4, Lucide React
-- **Client Resilience**: Typed API client (`src/lib/api.ts`) with clear backend errors and a same-origin Next.js API proxy.
-
-## 🔌 Backend Connection
-
-The Next.js server proxies dashboard API calls to the FastAPI backend at
-`http://localhost:8000` by default, so the browser does not need cross-origin
-access to the backend. Set `NEXT_PUBLIC_API_URL` before starting or building
-the frontend to use a different backend origin:
-
-```dotenv
-NEXT_PUBLIC_API_URL=http://localhost:8000
+```mermaid
+flowchart LR
+    Person[User] --> Browser[Browser]
+    Browser --> Next[Next.js 16 dashboard]
+    Browser -->|same-origin /api/backend requests| Next
+    Next -->|rewrite to NEXT_PUBLIC_API_URL| API[FastAPI backend]
+    API --> DB[(PostgreSQL)]
+    API --> Queue[Redis queue and worker]
+    Next --> Pages[Overview, agents, scenarios]
+    Next --> Runs[Evaluations, evidence, regression diffs]
+    Next --> Settings[Integrations and platform settings]
 ```
 
-For local development, start the backend from `backend/` with
-`python -m uvicorn novora.api.main:app --reload --port 8000`, then start the
-frontend with `npm run dev` from `frontend/`. Provider webhook URLs shown in
-Integrations point directly at the configured backend origin.
+The browser sends API requests to the dashboard's same origin. Next.js rewrites the /api/backend path to the backend configured by NEXT_PUBLIC_API_URL; this keeps normal dashboard API calls away from browser cross-origin requests. Webhook addresses displayed for provider setup point directly to the backend.
 
-The login and signup pages use the backend's email/password endpoints. A
-successful signup or login returns a bearer token that the dashboard stores
-in browser local storage and sends with authenticated API requests. The
-dashboard checks the session on entry and protects it with a sign-out action.
+## Current capabilities
 
-### Deploy with Docker on Render
+- Sign up, sign in, and check the current account.
+- Configure supported voice-agent providers and agents.
+- Define scenarios, criteria, and test inputs.
+- Run evaluations and inspect status, transcript evidence, rule outcomes, and integrity details.
+- View run history and compare baseline and candidate evaluations.
+- Configure supported integrations and inspect platform health.
+- Light and dark themes.
 
-Create a Render Web Service from this repository with the Docker runtime and
-the root `Dockerfile`. Set `NEXT_PUBLIC_API_URL` to the deployed backend's
-public HTTPS URL in the Render service's environment before building. The
-Docker image exposes port `10000` and binds to Render's `PORT` on `0.0.0.0`.
-The frontend uses this URL for its server-side API proxy and integration
-webhook links.
+The dashboard no longer fills a disconnected session with a fake user or demo evaluation records. When authentication cannot be verified, it reports the issue and directs the user to sign in.
 
----
+## Authentication tradeoff
 
-## 📦 Setup & Verification Commands
+The backend returns a short-lived bearer token after signup or login. The frontend stores it in browser local storage and attaches it to API requests. This works with the same-origin proxy and avoids cookie cross-origin setup, but JavaScript running in the page can read the token. Keep dependencies and scripts trusted; a future move to secure, HttpOnly cookies would reduce token exposure to browser scripts but requires coordinated backend and frontend changes.
 
-### 1. Install Dependencies
-```bash
-npm install
+## Knowledge Base page
+
+The Knowledge Base page is a Phase Two roadmap screen. It does not currently upload, index, or retrieve customer documents, and it does not affect evaluation verdicts. See the root [project overview](../README.md) for the Phase Two scope.
+
+## Local setup
+
+Requirements: Node.js 20.9 or newer and npm.
+
+```sh
+npm ci
+npm run dev
 ```
 
-### 2. Run Automated Contract & E2E Tests
-```bash
+Open http://localhost:3000. Run the API separately as described in [backend/README.md](../backend/README.md), then set NEXT_PUBLIC_API_URL to the API origin before starting Next.js.
+
+### Checks
+
+```sh
 npm test
+npm run build
 ```
-To run the end-to-end integration test against a live backend (`http://localhost:8000`):
-```bash
+
+The contract suite runs with npm test. The integration suite uses a running backend:
+
+```sh
 node --test tests/e2e.test.mjs
 ```
 
-### 3. Start Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
+Set NOVORA_API_BASE_URL if the backend is not listening at http://127.0.0.1:8000.
 
-### 4. Build Production Bundle
-```bash
-npm run build
-```
+## Render Docker deployment
+
+Create a Render Web Service from this repository with the Docker runtime and root Dockerfile. Set NEXT_PUBLIC_API_URL to the deployed backend's public HTTPS origin before the Docker build. The container listens on 0.0.0.0 at Render's PORT, default 10000.
+
+Deploy the API separately with PostgreSQL and Redis-compatible Key Value. The dashboard's API proxy needs a reachable backend URL; provider webhooks need the backend URL directly. Do not put secrets in NEXT_PUBLIC_* variables because Next.js exposes those values to the browser.
