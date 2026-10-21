@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { assetPath } from '@/lib/assetPath';
 
 export const metadata: Metadata = {
   title: 'Novora — AI Voice Agent Evaluation Infrastructure',
   description: 'Deterministic evaluation, regression monitoring, and policy compliance for conversational AI voice agents.',
   icons: {
-    icon: '/novora-logo-light.png',
+    icon: assetPath('/novora-logo-light.png'),
   },
 };
 

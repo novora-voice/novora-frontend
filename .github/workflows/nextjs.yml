@@ -26,6 +26,9 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_PAGES: "true"
+      NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,9 +59,6 @@ jobs:
           
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        with:
-          # Automatically injects basePath into the build settings matching your repository name
-          static_site_generator: next
           
       - name: Restore cache
         uses: actions/cache@v4
