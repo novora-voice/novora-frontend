@@ -1,8 +1,20 @@
 # Novora dashboard
 
-The frontend is the Next.js dashboard for creating and running voice-agent evaluations, reviewing evidence, and comparing results. It is a separate repository and deployable service from the FastAPI backend.
+The frontend is Novora's operator dashboard for evaluating conversational voice agents. Teams configure agents and business scenarios, run tests through supported providers, inspect transcript evidence for each verdict, and compare runs to find regressions. The dashboard presents results from the provider-neutral evaluation system; provider session execution, transcript ingestion, and verdict generation happen in the FastAPI backend.
 
-Novora helps teams check whether voice agents follow configured business workflows and policies, then inspect transcript evidence for each result. The dashboard is the operator-facing part of a provider-neutral evaluation system; provider session execution, ingestion, and verdict generation happen in the backend. See the [recruiter-facing project overview](../PROJECT_OVERVIEW.md) for the complete product description, architecture flowcharts, and planned Phase Two work.
+## Product workflow
+
+```mermaid
+flowchart LR
+    A[Configure provider and agent] --> B[Define scenario and rules]
+    B --> C[Run evaluation or batch]
+    C --> D[Track run status]
+    D --> E[Review transcript and rule evidence]
+    E --> F[Compare with baseline]
+    F --> G[Investigate regression or improvement]
+```
+
+The dashboard is organized around the evaluation lifecycle: the overview summarizes platform activity; Agents and Integrations hold provider setup; Scenarios define business goals and checks; Evaluations show run history, transcripts, evidence, and rule outcomes. Baseline/candidate comparisons make changes in agent behavior easier to investigate. The dashboard does not treat a fluent response as proof of success: missing or ambiguous evidence is shown as inconclusive or otherwise surfaced in the backend result.
 
 ## Dashboard architecture
 
@@ -63,6 +75,8 @@ The browser sends API requests to the dashboard's same origin. Next.js rewrites 
 - View run history and compare baseline and candidate evaluations.
 - Configure supported integrations and inspect platform health.
 - Configure developer-owned HTTP tool endpoints and inspect their actual provider-shaped request results where supported.
+- Run individual or batch evaluations, follow asynchronous job status, and inspect saved outcomes after completion.
+- Use scenario templates and configurable criteria to express workflow, policy, and tool-use expectations.
 - Light and dark themes.
 
 The dashboard no longer fills a disconnected session with a fake user or demo evaluation records. When authentication cannot be verified, it reports the issue and directs the user to sign in.
@@ -73,7 +87,14 @@ The backend returns a short-lived bearer token after signup or login. The fronte
 
 ## Knowledge Base page
 
-The Knowledge Base page is a Phase Two roadmap screen. It does not currently upload, index, or retrieve customer documents, and it does not affect evaluation verdicts. See the [project overview](../PROJECT_OVERVIEW.md) for the Phase Two scope, including authorized read-only knowledge sources, retrieval-grounded checks, and source/version traceability. The frontend roadmap also lists the managed Voxia runtime, LangGraph orchestration, and organization access controls/RBAC. These are planned capabilities, not current dashboard workflows; no release date is committed.
+## Planned frontend roadmap
+
+These are roadmap concepts shown in the dashboard, not current end-to-end workflows. No release date is committed.
+
+- **Knowledge sources:** The Knowledge page is a roadmap screen. It does not upload, index, or retrieve customer documents and does not affect evaluation verdicts. Planned work includes authorized read-only sources, retrieval-grounded checks against approved policies and facts, and source/version references in reports.
+- **Managed Voxia runtime:** A future dashboard path for configuring and operating Novora's managed voice runtime, including live streaming and interruption handling. Today, Novora evaluates agents hosted by external providers.
+- **LangGraph workflows:** Planned stateful and branching orchestration for richer multi-turn or multi-agent evaluation flows.
+- **Organizations and RBAC:** Planned organization scopes, role-based permissions, and associated access governance.
 
 ## Local setup
 
