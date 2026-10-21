@@ -13,6 +13,7 @@ import { KnowledgeView } from '@/components/views/KnowledgeView';
 import { SettingsView } from '@/components/views/SettingsView';
 import { AuthUser, EvaluationReport, EvaluationScenario, VoiceAgent, VoiceProvider } from '@/types/api';
 import { ApiError, novoraApi } from '@/lib/api';
+import { clearToken, getToken } from '@/lib/apiClient';
 import { EvaluationDetailModal } from '@/components/evaluations/EvaluationDetailModal';
 import { ProviderEvaluationWizardModal } from '@/components/wizard/ProviderEvaluationWizardModal';
 import { NewScenarioModal } from '@/components/scenarios/NewScenarioModal';
@@ -32,7 +33,6 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [authVerificationFailed, setAuthVerificationFailed] = useState(false);
   const [selectedEvaluation, setSelectedEvaluation] = useState<EvaluationReport | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isNewScenarioOpen, setIsNewScenarioOpen] = useState(false);
@@ -90,37 +90,40 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const verifySession = async () => {
-      try {
-        const user = await novoraApi.getCurrentUser();
-        setCurrentUser(user);
-        await loadData();
-      } catch (err: unknown) {
-        if (err instanceof ApiError && err.status === 401) {
-          router.replace('/login');
-        } else {
-          setAuthVerificationFailed(true);
-        }
-      } finally {
-        setAuthChecked(true);
+    // Decide the initial route from the locally stored session first. A slow or
+    // temporarily unreachable API should not turn an existing session into a
+    // sign-in failure screen.
+    if (!getToken()) {
+      clearToken();
+      router.replace('/login');
+      setAuthChecked(true);
+      return;
+    }
+
+    setCurrentUser({
+      id: 'token-session',
+      email: 'Account',
+      full_name: '',
+      created_at: '',
+    });
+    setAuthChecked(true);
+    void loadData();
+
+    // Refresh the account details in the background. Only a confirmed expired
+    // or invalid token should send the user back to sign-in.
+    void novoraApi.getCurrentUser().then(setCurrentUser).catch((err: unknown) => {
+      if (err instanceof ApiError && err.status === 401) {
+        clearToken();
+        router.replace('/login');
       }
-    };
-    void verifySession();
+    });
   }, [loadData, router]);
 
   if (!authChecked || !currentUser) {
-    if (authChecked && authVerificationFailed) {
-      return (
-        <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[var(--bg-primary)] p-6 text-center">
-          <p className="text-sm font-medium text-[var(--text-primary)]">Unable to verify your session.</p>
-          <p className="text-sm text-[var(--text-muted)]">Check the backend connection and try signing in again.</p>
-          <button className="text-sm font-semibold text-blue-600" onClick={() => router.replace('/login')}>Go to sign in</button>
-        </main>
-      );
-    }
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] p-6">
-        <p className="text-sm font-medium text-[var(--text-muted)]">Verifying Novora session...</p>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[var(--bg-primary)] p-6">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border-color)] border-t-blue-600" aria-hidden="true" />
+        <p className="text-sm font-semibold text-[var(--text-muted)]">Loading Novora...</p>
       </main>
     );
   }
