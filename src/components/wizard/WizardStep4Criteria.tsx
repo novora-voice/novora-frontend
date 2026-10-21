@@ -6,6 +6,7 @@ import { ShieldCheck, Scale, Plus, Trash2, Edit3, X, Check, CheckCircle2 } from 
 
 export interface EvaluatorCriterionState {
   id: string;
+  rule_config_id?: string;
   type: 'deterministic' | 'llm_judge';
   name: string;
   description: string;
@@ -18,15 +19,18 @@ export interface EvaluatorCriterionState {
   instructions?: string;
   objective?: string;
   failure_conditions?: string;
+  parameters?: Record<string, unknown>;
 }
 
 export function getInitialCriteriaForScenario(rules?: RuleConfig[]): EvaluatorCriterionState[] {
-  const deterministic: EvaluatorCriterionState[] = (rules || []).map((r, i) => ({
+  const deterministic: EvaluatorCriterionState[] = (rules || []).map<EvaluatorCriterionState>((r, i) => ({
     id: `crit_${i}_${r.rule_type}`,
+    rule_config_id: r.id,
     type: 'deterministic',
-    rule_type: r.rule_type,
+    rule_type: r.rule_type as RuleType,
     name: r.name || r.rule_type,
     description: r.description || 'Deterministic policy verification',
+    parameters: r.parameters,
     expected_behavior: typeof r.parameters === 'object' ? JSON.stringify(r.parameters) : String(r.parameters),
     severity: (r.rule_type === 'unsupported_completion' || r.rule_type === 'policy_compliance') ? 'CRITICAL' : 'WARNING',
     enabled: true,
@@ -128,7 +132,7 @@ export const WizardStep4Criteria: React.FC<WizardStep4CriteriaProps> = ({
     if (!judgeName.trim() || !judgeInstructions.trim()) return;
 
     const newJudge: EvaluatorCriterionState = {
-      id: `custom_judge_${Date.now()}`,
+      id: `custom_judge_${judgeName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`,
       type: 'llm_judge',
       name: judgeName.trim(),
       description: judgeObjective.trim() || judgeName.trim(),

@@ -23,15 +23,15 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({
 }) => {
   return (
     <div
-      className="flex flex-col justify-between rounded-2xl border p-5 transition-all hover:shadow-lg"
+      className="flex min-w-0 flex-col justify-between overflow-hidden rounded-2xl border p-5 transition-all hover:shadow-lg"
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderColor: 'var(--border-color)',
       }}
     >
       <div>
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <div className="flex items-center gap-2.5">
+        <div className="mb-2 flex min-w-0 items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
             <div
               className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0"
               style={{ backgroundColor: 'var(--primary-subtle)', color: 'var(--primary)' }}
@@ -39,10 +39,10 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({
               <FlaskConical size={18} />
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-[var(--text-primary)] truncate">
+              <h3 className="break-words text-sm font-bold text-[var(--text-primary)]">
                 {scenario.name}
               </h3>
-              <span className="text-[10px] text-[var(--text-muted)] font-mono truncate block">
+              <span className="block break-all text-[10px] font-mono text-[var(--text-muted)]">
                 {scenario.id}
               </span>
             </div>
@@ -56,7 +56,7 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({
           </span>
         </div>
 
-        <p className="text-xs text-[var(--text-secondary)] mb-3 line-clamp-2">
+        <p className="mb-3 overflow-hidden whitespace-pre-wrap break-words text-xs text-[var(--text-secondary)]">
           {scenario.business_goal}
         </p>
 
@@ -67,9 +67,9 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({
             </span>
             <ul className="space-y-1 text-xs text-[var(--text-secondary)]">
               {scenario.success_criteria.slice(0, 2).map((sc, idx) => (
-                <li key={idx} className="flex items-center gap-1.5 truncate">
+                <li key={idx} className="flex items-start gap-1.5 break-words">
                   <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                  <span className="truncate">{sc}</span>
+                  <span className="min-w-0">{sc}</span>
                 </li>
               ))}
             </ul>

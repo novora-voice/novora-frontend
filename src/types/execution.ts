@@ -70,6 +70,13 @@ export interface TestRunExecutionRequest {
   agent: AgentConfig;
   provider_config?: Record<string, unknown>;
   enable_llm_judge?: boolean;
+  llm_rubrics?: Array<{
+    criterion_id: string;
+    name: string;
+    description: string;
+    weight?: number;
+    rubric_guidance: string;
+  }>;
   /** User's plain-English test instructions */
   user_instructions?: string;
   /** Optional scripted turns if user provided structured turns */
@@ -79,6 +86,66 @@ export interface TestRunExecutionRequest {
 export interface TestRunResponse {
   test_run: TestRun;
   evaluation_report?: EvaluationReport;
+}
+
+export interface EvaluationJobResponse {
+  job_id: string;
+  status: 'queued' | 'running' | 'retrying' | 'completed' | 'failed' | string;
+  attempt: number;
+  error?: string;
+  evaluation_report?: EvaluationReport;
+}
+
+export type ToolEndpointProvider = 'vapi' | 'retell';
+export type ToolEndpointMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+export interface HttpToolEndpointConfig {
+  id: string;
+  name: string;
+  provider: ToolEndpointProvider;
+  tool_name: string;
+  endpoint_url: string;
+  method: ToolEndpointMethod;
+  timeout_ms: number;
+  api_key_masked: string;
+  has_auth: boolean;
+  created_at: string;
+}
+
+export interface ProviderIntegration {
+  id: string;
+  provider_name: string;
+  api_key_masked: string;
+  base_url?: string | null;
+  timeout_seconds: number;
+  safe_mode: boolean;
+  created_at: string;
+}
+
+export interface IntegrationHealth {
+  provider: string;
+  is_healthy: boolean;
+  latency_ms?: number | null;
+  last_checked: string;
+  error?: string | null;
+}
+
+export interface HttpToolEvaluationResult {
+  id: string;
+  endpoint_id: string;
+  endpoint_name: string;
+  provider: ToolEndpointProvider;
+  tool_name: string;
+  method: ToolEndpointMethod;
+  endpoint_url: string;
+  request_payload: Record<string, unknown>;
+  status_code?: number | null;
+  response_payload?: unknown;
+  latency_ms?: number | null;
+  success: boolean;
+  performance_pass: boolean;
+  error?: string | null;
+  created_at: string;
 }
 
 export interface BatchCreateRequest {

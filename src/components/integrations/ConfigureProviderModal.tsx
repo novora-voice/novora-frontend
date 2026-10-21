@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { IntegrationItem } from './IntegrationCard';
 import { X, Key, Copy, Check, ShieldCheck, Lock } from 'lucide-react';
 
 interface ConfigureProviderModalProps {
   item: IntegrationItem | null;
   onClose: () => void;
-  onSave: (providerId: string, values: Record<string, string>) => void;
+  onSave: (providerId: string, values: Record<string, string>) => Promise<void> | void;
 }
 
 export const ConfigureProviderModal: React.FC<ConfigureProviderModalProps> = ({
@@ -19,6 +19,15 @@ export const ConfigureProviderModal: React.FC<ConfigureProviderModalProps> = ({
   const [webhookSecret, setWebhookSecret] = useState('');
   const [copied, setCopied] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setApiKey('');
+    setWebhookSecret('');
+    setSaveError(null);
+    setIsSaved(false);
+  }, [item?.id]);
 
   if (!item) return null;
 
@@ -34,14 +43,22 @@ export const ConfigureProviderModal: React.FC<ConfigureProviderModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(item.id, { apiKey, webhookSecret });
-    setIsSaved(true);
-    setTimeout(() => {
-      setIsSaved(false);
-      onClose();
-    }, 1200);
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(item.id, { apiKey, webhookSecret });
+      setIsSaved(true);
+      setTimeout(() => {
+        setIsSaved(false);
+        onClose();
+      }, 800);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save provider credentials.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -104,6 +121,7 @@ export const ConfigureProviderModal: React.FC<ConfigureProviderModalProps> = ({
             <div className="relative">
               <input
                 type="password"
+                required
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="••••••••••••••••••••••••"
@@ -141,13 +159,15 @@ export const ConfigureProviderModal: React.FC<ConfigureProviderModalProps> = ({
               </button>
               <button
                 type="submit"
+                disabled={isSaving}
                 className="rounded-xl px-4 py-2 font-bold text-white shadow-sm"
                 style={{ backgroundColor: isSaved ? 'var(--status-success)' : 'var(--primary)' }}
               >
-                {isSaved ? 'Saved!' : 'Save Credentials'}
+                {isSaving ? 'Saving…' : isSaved ? 'Saved!' : 'Save Credentials'}
               </button>
             </div>
           </div>
+          {saveError && <p role="alert" className="text-xs text-rose-500">{saveError}</p>}
         </form>
       </div>
     </div>

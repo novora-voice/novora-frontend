@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { EvaluationReport, EvaluationScenario, VoiceProvider, RuleType } from '@/types/api';
+import { EvaluationReport, EvaluationScenario, VoiceAgent, VoiceProvider, RuleType } from '@/types/api';
 import {
   AgentConfig,
+  EvaluationJobResponse,
   TestRunExecutionRequest,
   ProviderManifest,
   PayloadPipelineResult,
@@ -20,13 +21,19 @@ import { WizardStep5Run } from './WizardStep5Run';
 
 interface ProviderEvaluationWizardModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (backgroundRun?: boolean) => void;
   scenarios: EvaluationScenario[];
   onEvaluationCreated: (report: EvaluationReport) => void;
+  onScenarioCreated?: (scenario: EvaluationScenario) => void;
   initialScenarioId?: string;
   initialProvider?: VoiceProvider;
+  initialAgent?: VoiceAgent;
   isBackendConnected: boolean;
   onRequireProviderModal: () => void;
+}
+
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardModalProps> = ({
@@ -34,8 +41,10 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
   onClose,
   scenarios,
   onEvaluationCreated,
+  onScenarioCreated,
   initialScenarioId,
   initialProvider,
+  initialAgent,
   isBackendConnected,
   onRequireProviderModal,
 }) => {
@@ -44,8 +53,8 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
   const [selectedScenario, setSelectedScenario] = useState<EvaluationScenario | ScenarioTemplate>(() => {
     return scenarios.find((s) => s.id === initialScenarioId) || SCENARIO_TEMPLATES[0];
   });
-  const [agentName, setAgentName] = useState('Front Desk Voice Assistant');
-  const [agentRefId, setAgentRefId] = useState('asst_vapi_default');
+  const [agentName, setAgentName] = useState(initialAgent?.name || 'Front Desk Voice Assistant');
+  const [agentRefId, setAgentRefId] = useState(initialAgent?.agent_id_ref || '');
   const [systemPrompt, setSystemPrompt] = useState('Authenticate customer and enforce $50 credit ceiling.');
   const [toolConfig, setToolConfig] = useState('lookup_order, process_refund');
   const [executionMode, setExecutionMode] = useState<'sandbox' | 'live'>('sandbox');
@@ -65,37 +74,40 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
   // Execution states
   const [liveConfirmed, setLiveConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [progressStage, setProgressStage] = useState(1);
+  const [jobStatus, setJobStatus] = useState<EvaluationJobResponse['status'] | null>(null);
+  const [jobAttempt, setJobAttempt] = useState(0);
   const [stepError, setStepError] = useState<string | null>(null);
   const [providerManifests, setProviderManifests] = useState<ProviderManifest[]>([]);
-
-  useEffect(() => {
-    if (initialProvider) {
-      setProvider(initialProvider);
-      if (initialProvider === 'vapi') setAgentRefId('asst_vapi_default');
-      else if (initialProvider === 'retell') setAgentRefId('agent_retell_default');
-      else if (initialProvider === 'elevenlabs') setAgentRefId('ag_el_default');
-      else if (initialProvider === 'assemblyai') setAgentRefId('aai_stream_default');
-    }
-  }, [initialProvider]);
+  const [missingRequirements, setMissingRequirements] = useState<string[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onClose(isSubmitting);
     };
     window.addEventListener('keydown', handleKeyDown);
     if (isBackendConnected) {
       novoraApi.listProviders().then(setProviderManifests).catch(() => {});
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, isBackendConnected]);
+  }, [isOpen, onClose, isBackendConnected, isSubmitting]);
 
   if (!isOpen) return null;
 
   const handleSelectScenario = (scen: EvaluationScenario | ScenarioTemplate) => {
     setSelectedScenario(scen);
     setCriteria(getInitialCriteriaForScenario(scen.rules));
+  };
+
+  const getMissingRequirements = () => {
+    const missing: string[] = [];
+    if (!agentName.trim()) missing.push('Agent name');
+    if (!agentRefId.trim()) missing.push('Agent ID');
+    if (!selectedScenario || !selectedScenario.name.trim()) missing.push('Evaluation scenario');
+    if (!userInstructions.trim()) missing.push('Test instructions');
+    if (!criteria.some((criterion) => criterion.enabled)) missing.push('At least one enabled evaluation criterion');
+    if (executionMode === 'live' && !liveConfirmed) missing.push('Live execution authorization');
+    return missing;
   };
 
   const handleNextStep = () => {
@@ -111,8 +123,13 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
 
     // Step 3 Validation: Mandatory Agent ID
     if (step === 3) {
-      if (!agentRefId.trim()) {
-        setStepError('Agent ID is mandatory. Please provide a valid external agent ID for your selected provider.');
+      const missing = [
+        ...(!agentName.trim() ? ['Agent name'] : []),
+        ...(!agentRefId.trim() ? ['Agent ID'] : []),
+        ...(!userInstructions.trim() ? ['Test instructions'] : []),
+      ];
+      if (missing.length) {
+        setMissingRequirements(missing);
         return;
       }
     }
@@ -120,9 +137,17 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
     // Step 5 Validation: JSON Payload check
     if (step === 5 && payloadJson.trim()) {
       try {
-        JSON.parse(payloadJson);
+        const parsedPayload: unknown = JSON.parse(payloadJson);
+        if (!isJsonObject(parsedPayload)) {
+          setStepError('Provider payload must be a JSON object.');
+          return;
+        }
       } catch (err: unknown) {
         setStepError(`Malformed payload JSON: ${err instanceof Error ? err.message : 'Invalid JSON'}`);
+        return;
+      }
+      if (!isPayloadValidated) {
+        setStepError('Validate the provider JSON before continuing to the test.');
         return;
       }
     }
@@ -131,16 +156,16 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
   };
 
   const handleRunEvaluation = async () => {
+    const missing = getMissingRequirements();
+    if (missing.length) {
+      setMissingRequirements(missing);
+      return;
+    }
+    setMissingRequirements([]);
     setIsSubmitting(true);
     setStepError(null);
-    setProgressStage(1);
-
-    const stageTimer1 = setTimeout(() => setProgressStage(2), 400);
-    const stageTimer2 = setTimeout(() => setProgressStage(3), 900);
-    const stageTimer3 = setTimeout(() => setProgressStage(4), 1600);
-    const stageTimer4 = setTimeout(() => setProgressStage(5), 2300);
-    const stageTimer5 = setTimeout(() => setProgressStage(6), 3000);
-    const stageTimer6 = setTimeout(() => setProgressStage(7), 3700);
+    setJobStatus('queued');
+    setJobAttempt(0);
 
     try {
       const activeDeterministic = criteria.filter((c) => c.type === 'deterministic' && c.enabled);
@@ -154,11 +179,15 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
         business_goal: selectedScenario.business_goal,
         success_criteria: ('success_criteria' in selectedScenario && selectedScenario.success_criteria) || activeDeterministic.map((r) => r.name),
         rules: activeDeterministic.map((r) => ({
+          id: r.rule_config_id,
           rule_type: (r.rule_type || (r.id.includes('unsupported') ? 'unsupported_completion' : r.id.includes('cap') ? 'policy_compliance' : r.id.includes('tool') ? 'expected_tool_call' : 'required_information')) as RuleType,
           name: r.name,
           description: r.description,
           parameters: {
-            expected_behavior: r.expected_behavior,
+            ...(r.parameters || {}),
+            ...(!r.parameters || Object.keys(r.parameters).length === 0
+              ? { condition: r.expected_behavior }
+              : {}),
             severity: r.severity,
             failure_message: r.failure_message,
           },
@@ -177,11 +206,11 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
 
       let parsedPayload: Record<string, unknown> | undefined;
       if (payloadJson.trim()) {
-        try {
-          parsedPayload = JSON.parse(payloadJson);
-        } catch {
-          // ignore
+        const parsed: unknown = JSON.parse(payloadJson);
+        if (!isJsonObject(parsed)) {
+          throw new Error('Provider payload must be a JSON object.');
         }
+        parsedPayload = parsed;
       }
 
       const req: TestRunExecutionRequest = {
@@ -193,29 +222,72 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
           custom_payload: parsedPayload,
         },
         enable_llm_judge: activeJudge.length > 0,
+        llm_rubrics: activeJudge.map((criterion) => ({
+          criterion_id: criterion.id,
+          name: criterion.name,
+          description: criterion.description,
+          rubric_guidance: [
+            criterion.instructions,
+            `Expected behavior: ${criterion.expected_behavior}`,
+            criterion.failure_conditions ? `Failure conditions: ${criterion.failure_conditions}` : undefined,
+            criterion.objective ? `Objective: ${criterion.objective}` : undefined,
+          ].filter(Boolean).join('\n'),
+        })),
         user_instructions: userInstructions.trim() || undefined,
       };
 
-      const res = await novoraApi.executeTestRun(req);
-      if (res.evaluation_report) {
-        onEvaluationCreated(res.evaluation_report);
-        onClose();
-      } else {
-        throw new Error('Test run completed without returning an evaluation report.');
+      const queued = await novoraApi.enqueueTestRun(req);
+      setJobStatus(queued.status);
+      setJobAttempt(queued.attempt);
+      const queuedAt = Date.now();
+
+      while (true) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        let job: EvaluationJobResponse;
+        try {
+          job = await novoraApi.getEvaluationJob(queued.job_id);
+        } catch (pollError: unknown) {
+          setStepError(
+            `Could not check evaluation progress: ${pollError instanceof Error ? pollError.message : 'Connection lost'}. Retrying status check...`
+          );
+          continue;
+        }
+
+        setJobStatus(job.status);
+        setJobAttempt(job.attempt);
+        if (job.status === 'completed') {
+          if (!job.evaluation_report) {
+            throw new Error('Evaluation job completed without returning an evaluation report.');
+          }
+          onEvaluationCreated(job.evaluation_report);
+          onClose();
+          return;
+        }
+        if (job.status === 'failed') {
+          if (job.evaluation_report) {
+            onEvaluationCreated(job.evaluation_report);
+            onClose();
+            return;
+          }
+          setStepError(job.error || 'Evaluation failed after all automatic retries.');
+          return;
+        }
+        if (job.status === 'retrying') {
+          setStepError(job.error ? `Evaluation failed and will retry: ${job.error}` : 'Evaluation failed and will retry.');
+        } else if (job.status === 'queued' && Date.now() - queuedAt >= 30_000) {
+          setStepError(`Evaluation ${queued.job_id} is still queued after 30 seconds. The backend has accepted it, but its Redis worker has not started it yet. Check the backend worker and Redis logs; this page will keep checking for the result.`);
+        } else {
+          setStepError(null);
+        }
       }
     } catch (err: unknown) {
+      setJobStatus('failed');
       if (err instanceof ApiError && (err.status === 404 || err.status === 400) && err.message.toLowerCase().includes('provider')) {
         onRequireProviderModal();
       } else {
         setStepError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Evaluation run failed.');
       }
     } finally {
-      clearTimeout(stageTimer1);
-      clearTimeout(stageTimer2);
-      clearTimeout(stageTimer3);
-      clearTimeout(stageTimer4);
-      clearTimeout(stageTimer5);
-      clearTimeout(stageTimer6);
       setIsSubmitting(false);
     }
   };
@@ -226,9 +298,27 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !isSubmitting) onClose();
+        if (e.target === e.currentTarget) onClose(isSubmitting);
       }}
     >
+      {missingRequirements.length > 0 && (
+        <div className="fixed inset-x-0 top-4 z-[70] flex justify-center px-4" role="alertdialog" aria-modal="true" aria-labelledby="missing-requirements-title">
+          <div className="w-full max-w-lg rounded-2xl border border-amber-500/40 bg-[var(--bg-surface)] p-4 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-500" />
+              <div className="min-w-0 flex-1">
+                <h2 id="missing-requirements-title" className="text-sm font-bold text-[var(--text-primary)]">Complete these requirements to run the evaluation</h2>
+                <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-[var(--text-secondary)]">
+                  {missingRequirements.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+              <button type="button" onClick={() => setMissingRequirements([])} className="rounded-lg p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]" aria-label="Dismiss">
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div
         className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl border shadow-2xl relative"
         style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
@@ -236,9 +326,14 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b p-5" style={{ borderColor: 'var(--border-color)' }}>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]">
-              AI Testing Sandbox &amp; Provider Evaluation Engine
-            </span>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]">
+                AI Testing Sandbox &amp; Provider Evaluation Engine
+              </span>
+              <h2 className="mt-0.5 max-w-xl truncate text-sm font-bold text-[var(--text-primary)]" title={selectedScenario.name}>
+                {selectedScenario.name}
+              </h2>
+            </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               {[1, 2, 3, 4, 5, 6].map((s) => (
                 <div
@@ -253,10 +348,10 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
           </div>
           <button
             type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] disabled:opacity-30"
-            aria-label="Close"
+            onClick={() => onClose(isSubmitting)}
+            className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]"
+            aria-label={isSubmitting ? 'Close; evaluation will continue in the background' : 'Close'}
+            title={isSubmitting ? 'Close; evaluation will continue in the background' : 'Close'}
           >
             <X size={18} />
           </button>
@@ -276,10 +371,10 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
               selectedProvider={provider}
               onSelectProvider={(p) => {
                 setProvider(p);
-                if (p === 'vapi') setAgentRefId('asst_vapi_default');
-                else if (p === 'retell') setAgentRefId('agent_retell_default');
-                else if (p === 'elevenlabs') setAgentRefId('ag_el_default');
-                else if (p === 'assemblyai') setAgentRefId('aai_stream_default');
+                setAgentRefId('');
+                setPayloadJson('');
+                setIsPayloadValidated(false);
+                setPipelineResult(null);
               }}
               isBackendConnected={isBackendConnected}
               providerManifests={providerManifests}
@@ -291,6 +386,7 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
               scenarios={scenarios}
               selectedScenarioId={'id' in selectedScenario ? selectedScenario.id : selectedScenario.template_id}
               onSelectScenario={handleSelectScenario}
+              onScenarioCreated={onScenarioCreated}
             />
           )}
 
@@ -300,7 +396,11 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
               agentName={agentName}
               onAgentNameChange={setAgentName}
               agentRefId={agentRefId}
-              onAgentRefIdChange={setAgentRefId}
+              onAgentRefIdChange={(value) => {
+                setAgentRefId(value);
+                setIsPayloadValidated(false);
+                setPipelineResult(null);
+              }}
               systemPrompt={systemPrompt}
               onSystemPromptChange={setSystemPrompt}
               toolConfig={toolConfig}
@@ -352,7 +452,8 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
               criteria={criteria}
               userInstructions={userInstructions}
               isSubmitting={isSubmitting}
-              progressStage={progressStage}
+              jobStatus={jobStatus}
+              jobAttempt={jobAttempt}
               liveConfirmed={liveConfirmed}
               onLiveConfirmedChange={setLiveConfirmed}
               onRunTest={handleRunEvaluation}

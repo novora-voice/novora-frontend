@@ -23,7 +23,7 @@ export interface Conversation {
   metadata?: Record<string, unknown>;
 }
 
-export type EvaluationStatus = 'PASS' | 'FAIL' | 'INCONCLUSIVE';
+export type EvaluationStatus = 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'NOT_EVALUATED';
 
 export type RuleType =
   | 'required_information'
@@ -66,7 +66,12 @@ export interface RuleResult {
 export interface EvaluationReport {
   id: string;
   scenario_id: string;
+  agent_id?: string;
+  agent_name?: string;
   conversation_id: string;
+  test_run_id?: string | null;
+  scenario_fingerprint?: string | null;
+  expected_rule_ids?: string[];
   overall_status: EvaluationStatus;
   summary: string;
   rule_results: RuleResult[];
@@ -76,7 +81,7 @@ export interface EvaluationReport {
 
 export interface RuleConfig {
   id?: string;
-  rule_type: RuleType;
+  rule_type: RuleType | string;
   name?: string | null;
   description?: string;
   parameters: Record<string, unknown>;
@@ -111,11 +116,14 @@ export interface EvaluateConversationPayload {
 }
 
 export interface RuleComparison {
+  rule_id?: string | null;
+  baseline_rule_id?: string | null;
+  candidate_rule_id?: string | null;
   rule_name: string;
   rule_type: string;
   baseline_status: EvaluationStatus;
   candidate_status: EvaluationStatus;
-  change: 'regressed' | 'improved' | 'unchanged';
+  change: 'regressed' | 'improved' | 'unchanged' | 'inconclusive' | 'not_evaluated';
   explanation_diff?: string;
 }
 
@@ -125,8 +133,11 @@ export interface RegressionReport {
   candidate_id: string;
   baseline_status: EvaluationStatus;
   candidate_status: EvaluationStatus;
+  comparison_status: EvaluationStatus;
+  coverage_complete: boolean;
+  coverage_issues: string[];
   regression_detected: boolean;
-  net_status_change: 'regressed' | 'improved' | 'unchanged';
+  net_status_change: 'regressed' | 'improved' | 'unchanged' | 'inconclusive';
   rule_comparisons: RuleComparison[];
 }
 

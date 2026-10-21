@@ -34,7 +34,7 @@ export const CollapsibleRuleSection: React.FC<CollapsibleRuleSectionProps> = ({ 
     <div className="space-y-4">
       {/* Quick Filter */}
       <div className="flex items-center justify-between text-xs pb-1">
-        <span className="text-[var(--text-muted)] font-medium">Filter Criteria Checks:</span>
+        <span className="text-[var(--text-muted)] font-medium">Show checks:</span>
         <div className="flex items-center gap-1.5">
           {(['ALL', 'FAIL', 'PASS'] as const).map((st) => (
             <button
@@ -46,7 +46,7 @@ export const CollapsibleRuleSection: React.FC<CollapsibleRuleSectionProps> = ({ 
                   : 'bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               }`}
             >
-              {st}
+              {st === 'ALL' ? 'All' : st === 'FAIL' ? 'Failed' : 'Passed'}
             </button>
           ))}
         </div>
@@ -71,14 +71,14 @@ export const CollapsibleRuleSection: React.FC<CollapsibleRuleSectionProps> = ({ 
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-[var(--text-primary)]">
-                  Deterministic Policy Checks
+                  Policy and action checks
                 </span>
                 <span className="rounded-full px-2 py-0.2 text-[10px] font-bold bg-[var(--bg-elevated)] text-[var(--text-secondary)]">
                   {deterministicRules.length}
                 </span>
               </div>
               <span className="text-[11px] text-[var(--text-muted)]">
-                Direct policy limits, required info capture, and verified actions
+                Did the agent follow the rules, collect required details, and take the right actions?
               </span>
             </div>
           </div>
@@ -117,14 +117,14 @@ export const CollapsibleRuleSection: React.FC<CollapsibleRuleSectionProps> = ({ 
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-[var(--text-primary)]">
-                  LLM-as-Judge Criteria & Rubrics
+                  Conversation quality checks
                 </span>
                 <span className="rounded-full px-2 py-0.2 text-[10px] font-bold bg-[var(--bg-elevated)] text-[var(--text-secondary)]">
                   {llmJudgeRules.length || '0 (Default: Deterministic First)'}
                 </span>
               </div>
               <span className="text-[11px] text-[var(--text-muted)]">
-                Tone, conversational appropriateness, empathy, and qualitative objectives
+                Did the agent communicate clearly, naturally, and helpfully?
               </span>
             </div>
           </div>

@@ -34,6 +34,8 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
 
   const passedRules = report.rule_results?.filter((r) => r.status === 'PASS').length || 0;
   const totalRules = report.rule_results?.length || 0;
+  const failedRules = report.rule_results?.filter((r) => r.status === 'FAIL').length || 0;
+  const incompleteRules = report.rule_results?.filter((r) => r.status === 'INCONCLUSIVE' || r.status === 'NOT_EVALUATED').length || 0;
   const unverifiedClaims = report.rule_results?.filter(
     (r) => r.rule_type === 'unsupported_completion' && r.status !== 'PASS'
   );
@@ -59,14 +61,17 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                Executive Verdict & Compliance
+                What this evaluation found
               </span>
               <span className="text-xs font-bold text-[var(--text-primary)]">
-                {passedRules} of {totalRules} Rules Passed
+                {passedRules} passed · {failedRules} failed · {incompleteRules} could not be checked
               </span>
             </div>
             <p className="text-sm font-medium text-[var(--text-primary)] leading-relaxed">
               {report.summary}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-[var(--text-muted)]">
+              Pass means the agent met the check. Fail means the conversation showed it did not. Inconclusive means there was not enough evidence to decide; it does not count as a pass or a failure.
             </p>
           </div>
 
@@ -104,7 +109,7 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
               }`}
             >
               <FileCheck2 size={13} />
-              <span>Evidence & Rules ({totalRules})</span>
+              <span>Check results ({totalRules})</span>
             </button>
             <button
               onClick={() => setActiveTab('timeline')}

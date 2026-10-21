@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { CheckCircle2, AlertCircle, Clock, ExternalLink, Settings, Play } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Clock, Settings, Play } from 'lucide-react';
 
 export interface IntegrationItem {
   id: string;
@@ -14,6 +14,7 @@ export interface IntegrationItem {
   supportedOperations: string[];
   webhookPath?: string;
   recoveryGuidance?: string;
+  testActionLabel?: string;
 }
 
 interface IntegrationCardProps {
@@ -123,7 +124,7 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
             style={{ backgroundColor: 'var(--primary)' }}
           >
             <Play size={12} className={isTesting ? 'animate-spin' : ''} />
-            <span>{isTesting ? 'Testing...' : 'Test Connection'}</span>
+            <span>{isTesting ? 'Testing...' : item.testActionLabel ?? 'Test Connection'}</span>
           </button>
         ) : (
           <span className="text-[11px] font-semibold text-[var(--text-muted)]">Coming Soon</span>

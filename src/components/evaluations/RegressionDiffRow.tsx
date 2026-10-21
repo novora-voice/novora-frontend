@@ -3,7 +3,7 @@
 import React from 'react';
 import { RuleComparison } from '@/types/api';
 import { StatusBadge } from './StatusBadge';
-import { ArrowRight, AlertTriangle, CheckCircle2, Minus } from 'lucide-react';
+import { ArrowRight, AlertTriangle, CheckCircle2, Minus, HelpCircle } from 'lucide-react';
 
 interface RegressionDiffRowProps {
   comparison: RuleComparison;
@@ -12,6 +12,8 @@ interface RegressionDiffRowProps {
 export const RegressionDiffRow: React.FC<RegressionDiffRowProps> = ({ comparison }) => {
   const isRegressed = comparison.change === 'regressed';
   const isImproved = comparison.change === 'improved';
+  const isNotEvaluated = comparison.change === 'not_evaluated';
+  const isInconclusive = comparison.change === 'inconclusive';
 
   return (
     <div
@@ -36,6 +38,11 @@ export const RegressionDiffRow: React.FC<RegressionDiffRowProps> = ({ comparison
             <span className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 size={10} />
               <span>Improved</span>
+            </span>
+          ) : isInconclusive || isNotEvaluated ? (
+            <span className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400">
+              <HelpCircle size={10} />
+              <span>{isNotEvaluated ? 'Not evaluated' : 'Inconclusive'}</span>
             </span>
           ) : (
             <span className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--text-muted)]">

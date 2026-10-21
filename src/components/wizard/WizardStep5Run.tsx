@@ -3,7 +3,7 @@
 import React from 'react';
 import { VoiceProvider } from '@/types/api';
 import { EvaluatorCriterionState } from './WizardStep4Criteria';
-import { Play, AlertTriangle, ShieldCheck, CheckCircle2, Loader2, Bot, Scale, Terminal } from 'lucide-react';
+import { Play, AlertTriangle, Loader2 } from 'lucide-react';
 
 interface WizardStep5RunProps {
   provider: VoiceProvider;
@@ -12,7 +12,8 @@ interface WizardStep5RunProps {
   executionMode: 'sandbox' | 'live';
   criteria: EvaluatorCriterionState[];
   isSubmitting: boolean;
-  progressStage?: number;
+  jobStatus?: string | null;
+  jobAttempt?: number;
   liveConfirmed: boolean;
   onLiveConfirmedChange: (val: boolean) => void;
   onRunTest: () => void;
@@ -21,16 +22,6 @@ interface WizardStep5RunProps {
   userInstructions?: string;
 }
 
-const STAGES = [
-  '1. Preparing test & provider session handshake',
-  '2. Starting runtime & ghost-caller session',
-  '3. Subscribing to provider event stream',
-  '4. Observing agent turns & recording tool calls',
-  '5. Evaluating deterministic rules in application code',
-  '6. Evaluating custom LLM criteria (DeepSeek / Llama 3.3)',
-  '7. Finalizing dual-layer evaluation report',
-];
-
 export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
   provider,
   agentName,
@@ -38,7 +29,8 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
   executionMode,
   criteria,
   isSubmitting,
-  progressStage = 1,
+  jobStatus,
+  jobAttempt = 0,
   liveConfirmed,
   onLiveConfirmedChange,
   onRunTest,
@@ -64,7 +56,7 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Agent Target &amp; ID</span>
-            <span className="text-xs font-bold text-[var(--text-primary)] font-mono">{agentId || agentName || 'Default Target'}</span>
+            <span className="text-xs font-bold text-[var(--text-primary)] font-mono">{agentId || 'Agent ID required'}</span>
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block">Evaluation Scenario</span>
@@ -123,38 +115,17 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
           <div className="flex items-center justify-between text-[11px] font-bold text-[var(--primary)]">
             <span className="flex items-center gap-1.5">
               <Loader2 size={13} className="animate-spin" />
-              <span>Ghost Caller Evaluation Runtime Active</span>
+              <span>
+                {jobStatus === 'retrying'
+                  ? 'Evaluation retry scheduled'
+                  : jobStatus === 'queued'
+                  ? 'Evaluation queued'
+                  : 'Evaluation running'}
+              </span>
             </span>
-            <span>Stage {Math.min(progressStage, STAGES.length)}/{STAGES.length}</span>
+            {jobAttempt > 0 && <span>Attempt {jobAttempt} / 11</span>}
           </div>
-
-          <div className="space-y-1.5 text-[11px]">
-            {STAGES.map((stageText, idx) => {
-              const stageNum = idx + 1;
-              const isDone = progressStage > stageNum;
-              const isCurrent = progressStage === stageNum;
-              return (
-                <div
-                  key={stageNum}
-                  className={`flex items-center gap-2 ${
-                    isDone || isCurrent ? 'text-[var(--text-primary)] font-semibold' : 'text-[var(--text-muted)]'
-                  }`}
-                >
-                  <CheckCircle2
-                    size={12}
-                    className={
-                      isDone
-                        ? 'text-emerald-500'
-                        : isCurrent
-                        ? 'text-[var(--primary)] animate-pulse'
-                        : 'text-transparent border rounded-full'
-                    }
-                  />
-                  <span>{stageText}</span>
-                </div>
-              );
-            })}
-          </div>
+          <p className="text-[10px] text-[var(--text-secondary)]">You can close this window; the evaluation will keep running in the background and its report will open when it finishes.</p>
         </div>
       )}
 
@@ -175,12 +146,12 @@ export const WizardStep5Run: React.FC<WizardStep5RunProps> = ({
           {isSubmitting ? (
             <>
               <Loader2 size={15} className="animate-spin" />
-              <span>Running Ghost-Caller Evaluation...</span>
+              <span>{jobStatus === 'retrying' ? 'Retrying Evaluation...' : 'Evaluation in Progress...'}</span>
             </>
           ) : (
             <>
               <Play size={15} />
-              <span>Launch Evaluation Run</span>
+              <span>{jobStatus === 'failed' ? 'Retry Evaluation' : 'Launch Evaluation Run'}</span>
             </>
           )}
         </button>

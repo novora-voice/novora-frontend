@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { VoiceAgent, EvaluationReport } from '@/types/api';
+import { novoraApi } from '@/lib/api';
 import { AgentCard } from '../agents/AgentCard';
 import { CreateAgentModal } from '../agents/CreateAgentModal';
 import { AgentDetailModal } from '../agents/AgentDetailModal';
@@ -29,6 +30,30 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createDefaultProvider, setCreateDefaultProvider] = useState<'elevenlabs' | 'assemblyai' | 'vapi' | 'retell'>('elevenlabs');
   const [selectedAgent, setSelectedAgent] = useState<VoiceAgent | null>(null);
+  const [latestEvaluationByAgent, setLatestEvaluationByAgent] = useState<Record<string, EvaluationReport>>({});
+
+  useEffect(() => {
+    let active = true;
+    const loadLatestEvaluations = async () => {
+      const results = await Promise.all(agents.map(async (agent) => {
+        const fallback = evaluations
+          .filter((evaluation) => (agent.agent_id_ref && evaluation.agent_id === agent.agent_id_ref)
+            || evaluation.agent_name?.trim().toLocaleLowerCase() === agent.name.trim().toLocaleLowerCase())
+          .sort((a, b) => new Date(b.evaluated_at).getTime() - new Date(a.evaluated_at).getTime())[0];
+        try {
+          const [latest] = await novoraApi.listEvaluationsByAgent(agent.agent_id_ref, agent.name);
+          return [agent.id, latest ?? fallback] as const;
+        } catch {
+          return [agent.id, fallback] as const;
+        }
+      }));
+      if (active) {
+        setLatestEvaluationByAgent(Object.fromEntries(results.filter((item): item is readonly [string, EvaluationReport] => Boolean(item[1]))));
+      }
+    };
+    void loadLatestEvaluations();
+    return () => { active = false; };
+  }, [agents, evaluations]);
 
   const filtered = agents.filter((ag) => {
     const matchSearch =
@@ -46,21 +71,10 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
     if (onSelectInfrastructureProvider) {
       onSelectInfrastructureProvider(prov);
     } else {
-      // Find or create dummy agent and trigger onRunTest
+      // Reuse a configured target if available. The parent owns the setup flow.
       const existing = agents.find((a) => a.provider === prov);
       if (existing) {
         onRunTest(existing);
-      } else {
-        const tempAgent: VoiceAgent = {
-          id: `ag_${prov}_target`,
-          name: prov === 'vapi' ? 'Vapi Assistant Target' : 'Retell Agent Target',
-          provider: prov,
-          agent_type: 'infrastructure',
-          configuration_status: 'ready',
-          agent_id_ref: prov === 'vapi' ? 'asst_vapi_default' : 'agent_retell_default',
-          created_at: new Date().toISOString(),
-        };
-        onRunTest(tempAgent);
       }
     }
   };
@@ -141,7 +155,11 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
               {voiceAgents.map((agent) => (
                 <AgentCard
                   key={agent.id}
-                  agent={agent}
+                  agent={{
+                    ...agent,
+                    recent_evaluation_status: latestEvaluationByAgent[agent.id]?.overall_status,
+                    recent_evaluation_id: latestEvaluationByAgent[agent.id]?.id,
+                  }}
                   onSelectAgent={setSelectedAgent}
                   onRunTest={onRunTest}
                 />
@@ -217,7 +235,11 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
               {infraAgents.map((agent) => (
                 <AgentCard
                   key={agent.id}
-                  agent={agent}
+                  agent={{
+                    ...agent,
+                    recent_evaluation_status: latestEvaluationByAgent[agent.id]?.overall_status,
+                    recent_evaluation_id: latestEvaluationByAgent[agent.id]?.id,
+                  }}
                   onSelectAgent={setSelectedAgent}
                   onRunTest={onRunTest}
                 />
@@ -235,7 +257,7 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
 
       <AgentDetailModal
         agent={selectedAgent}
-        evaluations={evaluations}
+        evaluations={[...evaluations, ...Object.values(latestEvaluationByAgent)]}
         onClose={() => setSelectedAgent(null)}
         onRunTest={onRunTest}
         onOpenEvaluationDetail={onOpenEvaluationDetail}
