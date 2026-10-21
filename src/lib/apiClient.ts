@@ -91,7 +91,11 @@ export async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_PROXY_PATH}${endpoint}`;
+  // GitHub Pages has no Next.js server to proxy /api/backend, so static
+  // deployments must call the configured backend origin directly.
+  const url = process.env.NEXT_PUBLIC_GITHUB_PAGES === 'true'
+    ? `${API_BASE_URL}${endpoint}`
+    : `${API_PROXY_PATH}${endpoint}`;
 
   // Inject JWT token from localStorage
   const token = getToken();

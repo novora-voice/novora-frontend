@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { assetPath } from '@/lib/assetPath';
 import { ShieldCheck, Activity, Sparkles, CheckCircle2 } from 'lucide-react';
 
 const FEATURES = [
@@ -21,7 +22,7 @@ export const AuthHero: React.FC = () => {
     >
       <div className="relative z-10">
         <div className="relative h-10 w-36 mb-12">
-          <Image src="/novora-logo-light.png" alt="Novora Logo" fill priority sizes="144px" className="object-contain object-left" />
+          <Image src={assetPath('/novora-logo-light.png')} alt="Novora Logo" fill priority sizes="144px" className="object-contain object-left" />
         </div>
 
         <div className="max-w-md">

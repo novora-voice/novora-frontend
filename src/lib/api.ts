@@ -2,6 +2,7 @@ import {
   EvaluationScenario,
   EvaluationReport,
   Conversation,
+  VoiceAgent,
   CreateScenarioPayload,
   ImportTranscriptPayload,
   EvaluateConversationPayload,
@@ -77,6 +78,24 @@ export const novoraApi = {
     return request<EvaluationScenario[]>(`/api/v1/scenarios?limit=${limit}&offset=${offset}`);
   },
 
+  async listConfiguredAgents(): Promise<VoiceAgent[]> {
+    return request<VoiceAgent[]>('/api/v1/configured-agents');
+  },
+
+  async createConfiguredAgent(agent: VoiceAgent): Promise<VoiceAgent> {
+    return request<VoiceAgent>('/api/v1/configured-agents', {
+      method: 'POST',
+      body: JSON.stringify(agent),
+    });
+  },
+
+  async updateConfiguredAgent(agent: VoiceAgent): Promise<VoiceAgent> {
+    return request<VoiceAgent>(`/api/v1/configured-agents/${encodeURIComponent(agent.id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(agent),
+    });
+  },
+
   async getScenario(id: string): Promise<EvaluationScenario> {
     return request<EvaluationScenario>(`/api/v1/scenarios/${encodeURIComponent(id)}`);
   },
@@ -88,11 +107,22 @@ export const novoraApi = {
     });
   },
 
+  async updateScenario(id: string, payload: CreateScenarioPayload): Promise<EvaluationScenario> {
+    return request<EvaluationScenario>(`/api/v1/scenarios/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   async importTranscript(payload: ImportTranscriptPayload): Promise<Conversation> {
     return request<Conversation>('/api/v1/conversations/import-transcript', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  async getConversation(id: string): Promise<Conversation> {
+    return request<Conversation>(`/api/v1/conversations/${encodeURIComponent(id)}`);
   },
 
   async evaluateConversation(payload: EvaluateConversationPayload): Promise<EvaluationReport> {

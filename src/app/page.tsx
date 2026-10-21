@@ -70,8 +70,12 @@ export default function DashboardPage() {
 
     if (connected) {
       try {
-        const fetchedScenarios = await novoraApi.listScenarios();
+        const [fetchedScenarios, fetchedAgents] = await Promise.all([
+          novoraApi.listScenarios(),
+          novoraApi.listConfiguredAgents(),
+        ]);
         setScenarios(fetchedScenarios);
+        setAgents(fetchedAgents);
         if (fetchedScenarios.length > 0) {
           const evalPromises = fetchedScenarios.map((s) => novoraApi.listEvaluations(s.id));
           const allEvalLists = await Promise.all(evalPromises);
@@ -166,7 +170,16 @@ export default function DashboardPage() {
               <AgentsView
                 agents={agents}
                 evaluations={evaluations}
-                onAddAgent={(ag) => { setAgents([ag, ...agents]); showToast(`Agent "${ag.name}" configured!`, 'success'); }}
+                onAddAgent={async (ag) => {
+                  const saved = await novoraApi.createConfiguredAgent(ag);
+                  setAgents((current) => [saved, ...current]);
+                  showToast(`Agent "${saved.name}" configured and saved.`, 'success');
+                }}
+                onUpdateAgent={async (updated) => {
+                  const saved = await novoraApi.updateConfiguredAgent(updated);
+                  setAgents((current) => current.map((agent) => agent.id === saved.id ? saved : agent));
+                  showToast(`Agent "${saved.name}" updated and saved.`, 'success');
+                }}
                 onRunTest={(ag) => {
                   setInitialAgent(ag);
                   setInitialProvider(ag.provider as VoiceProvider);
@@ -224,6 +237,10 @@ export default function DashboardPage() {
         onScenarioCreated={(scenario) => {
           setScenarios((previous) => [scenario, ...previous.filter((item) => item.id !== scenario.id)]);
           showToast(`Scenario "${scenario.name}" saved!`, 'success');
+        }}
+        onScenarioUpdated={(scenario) => {
+          setScenarios((previous) => previous.map((item) => item.id === scenario.id ? scenario : item));
+          showToast(`Scenario "${scenario.name}" updated.`, 'success');
         }}
         onEvaluationCreated={async (rep) => {
           let savedReport = rep;

@@ -2,13 +2,15 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { assetPath } from '@/lib/assetPath';
 import { VoiceAgent, EvaluationStatus } from '@/types/api';
-import { Bot, Play, ExternalLink, ShieldAlert, CheckCircle2, Clock } from 'lucide-react';
+import { Bot, Play, ExternalLink, Pencil } from 'lucide-react';
 import { StatusBadge } from '../evaluations/StatusBadge';
 
 interface AgentCardProps {
   agent: VoiceAgent;
   onSelectAgent: (agent: VoiceAgent) => void;
+  onEditAgent: (agent: VoiceAgent) => void;
   onRunTest: (agent: VoiceAgent) => void;
 }
 
@@ -23,6 +25,7 @@ const PROVIDER_INFO: Record<string, { label: string; logo: string }> = {
 export const AgentCard: React.FC<AgentCardProps> = ({
   agent,
   onSelectAgent,
+  onEditAgent,
   onRunTest,
 }) => {
   const provider = PROVIDER_INFO[agent.provider] || {
@@ -42,7 +45,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
             <div className="relative h-10 w-10 overflow-hidden rounded-xl border p-1" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-elevated)' }}>
-              <Image src={provider.logo} alt={provider.label} width={36} height={36} className="object-contain" />
+              <Image src={assetPath(provider.logo)} alt={provider.label} width={36} height={36} className="object-contain" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
@@ -100,7 +103,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t text-xs" style={{ borderColor: 'var(--border-color)' }}>
+      <div className="flex items-center justify-between gap-2 pt-3 border-t text-xs" style={{ borderColor: 'var(--border-color)' }}>
         <button
           onClick={() => onSelectAgent(agent)}
           className="flex items-center gap-1 font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
@@ -109,14 +112,25 @@ export const AgentCard: React.FC<AgentCardProps> = ({
           <ExternalLink size={12} />
         </button>
 
-        <button
-          onClick={() => onRunTest(agent)}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold text-white shadow-sm transition-transform active:scale-95"
-          style={{ backgroundColor: 'var(--primary)' }}
-        >
-          <Play size={12} />
-          <span>Test Agent</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onEditAgent(agent)}
+            aria-label={`Edit ${agent.name}`}
+            title="Edit agent"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+            style={{ borderColor: 'var(--border-color)' }}
+          >
+            <Pencil size={13} />
+          </button>
+          <button
+            onClick={() => onRunTest(agent)}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold text-white shadow-sm transition-transform active:scale-95"
+            style={{ backgroundColor: 'var(--primary)' }}
+          >
+            <Play size={12} />
+            <span>Test Agent</span>
+          </button>
+        </div>
       </div>
     </div>
   );

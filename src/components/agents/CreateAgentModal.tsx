@@ -7,7 +7,7 @@ import { X, Bot, Plus } from 'lucide-react';
 interface CreateAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAgentCreated: (agent: VoiceAgent) => void;
+  onAgentCreated: (agent: VoiceAgent) => Promise<void>;
 }
 
 export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
@@ -20,10 +20,12 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
   const [agentIdRef, setAgentIdRef] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [executionMode, setExecutionMode] = useState<'sandbox' | 'live'>('sandbox');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
@@ -40,8 +42,16 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
       last_activity_at: new Date().toISOString(),
     };
 
-    onAgentCreated(newAgent);
-    onClose();
+    setSaving(true);
+    setError('');
+    try {
+      await onAgentCreated(newAgent);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save this agent.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -76,6 +86,7 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {error && <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-red-600">{error}</p>}
           <div>
             <label className="font-bold text-[var(--text-primary)] block mb-1">Agent Name *</label>
             <input
@@ -150,12 +161,12 @@ export const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={!name.trim()}
+              disabled={!name.trim() || saving}
               className="flex items-center gap-1.5 rounded-xl px-4 py-2 font-bold text-white shadow-sm disabled:opacity-50"
               style={{ backgroundColor: 'var(--primary)' }}
             >
               <Plus size={14} />
-              <span>Save Agent</span>
+              <span>{saving ? 'Saving…' : 'Save Agent'}</span>
             </button>
           </div>
         </form>

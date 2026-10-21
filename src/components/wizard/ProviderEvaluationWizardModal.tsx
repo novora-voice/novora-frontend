@@ -25,6 +25,7 @@ interface ProviderEvaluationWizardModalProps {
   scenarios: EvaluationScenario[];
   onEvaluationCreated: (report: EvaluationReport) => void;
   onScenarioCreated?: (scenario: EvaluationScenario) => void;
+  onScenarioUpdated?: (scenario: EvaluationScenario) => void;
   initialScenarioId?: string;
   initialProvider?: VoiceProvider;
   initialAgent?: VoiceAgent;
@@ -42,6 +43,7 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
   scenarios,
   onEvaluationCreated,
   onScenarioCreated,
+  onScenarioUpdated,
   initialScenarioId,
   initialProvider,
   initialAgent,
@@ -55,9 +57,9 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
   });
   const [agentName, setAgentName] = useState(initialAgent?.name || 'Front Desk Voice Assistant');
   const [agentRefId, setAgentRefId] = useState(initialAgent?.agent_id_ref || '');
-  const [systemPrompt, setSystemPrompt] = useState('Authenticate customer and enforce $50 credit ceiling.');
-  const [toolConfig, setToolConfig] = useState('lookup_order, process_refund');
-  const [executionMode, setExecutionMode] = useState<'sandbox' | 'live'>('sandbox');
+  const [systemPrompt, setSystemPrompt] = useState(initialAgent ? (initialAgent.system_prompt ?? '') : 'Authenticate customer and enforce $50 credit ceiling.');
+  const [toolConfig, setToolConfig] = useState(initialAgent ? (initialAgent.tools?.join(', ') ?? '') : 'lookup_order, process_refund');
+  const [executionMode, setExecutionMode] = useState<'sandbox' | 'live'>(initialAgent?.execution_mode ?? 'sandbox');
   const [userInstructions, setUserInstructions] = useState('');
 
   // Criteria state
@@ -79,6 +81,16 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
   const [stepError, setStepError] = useState<string | null>(null);
   const [providerManifests, setProviderManifests] = useState<ProviderManifest[]>([]);
   const [missingRequirements, setMissingRequirements] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!isOpen || !initialAgent) return;
+    setProvider(initialAgent.provider);
+    setAgentName(initialAgent.name);
+    setAgentRefId(initialAgent.agent_id_ref ?? '');
+    setSystemPrompt(initialAgent.system_prompt ?? '');
+    setToolConfig(initialAgent.tools?.join(', ') ?? '');
+    setExecutionMode(initialAgent.execution_mode ?? 'sandbox');
+  }, [isOpen, initialAgent]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -387,6 +399,7 @@ export const ProviderEvaluationWizardModal: React.FC<ProviderEvaluationWizardMod
               selectedScenarioId={'id' in selectedScenario ? selectedScenario.id : selectedScenario.template_id}
               onSelectScenario={handleSelectScenario}
               onScenarioCreated={onScenarioCreated}
+              onScenarioUpdated={onScenarioUpdated}
             />
           )}
 

@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { EvaluationReport } from '@/types/api';
+import React, { useEffect, useState } from 'react';
+import { Conversation, EvaluationReport } from '@/types/api';
+import { TestRun } from '@/types/execution';
+import { executionApi, novoraApi } from '@/lib/api';
 import { EvaluationDetailHeader } from './EvaluationDetailHeader';
 import { CollapsibleRuleSection } from './CollapsibleRuleSection';
 import { EventTimeline } from './EventTimeline';
@@ -29,6 +31,27 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
   onOpenCompare,
 }) => {
   const [activeTab, setActiveTab] = useState<ModalTab>('evidence');
+  const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [testRun, setTestRun] = useState<TestRun | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
+  useEffect(() => {
+    setConversation(null);
+    setTestRun(null);
+    if (!report) return;
+    let active = true;
+    setDetailsLoading(true);
+    const loads: Promise<unknown>[] = [novoraApi.getConversation(report.conversation_id).then((value) => {
+      if (active) setConversation(value);
+    })];
+    if (report.test_run_id) {
+      loads.push(executionApi.getTestRun(report.test_run_id).then((value) => {
+        if (active) setTestRun(value);
+      }));
+    }
+    void Promise.allSettled(loads).finally(() => { if (active) setDetailsLoading(false); });
+    return () => { active = false; };
+  }, [report]);
 
   if (!report) return null;
 
@@ -147,8 +170,8 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
           </div>
 
           {activeTab === 'evidence' && <CollapsibleRuleSection ruleResults={report.rule_results || []} />}
-          {activeTab === 'timeline' && <EventTimeline report={report} />}
-          {activeTab === 'transcript' && <ConversationTranscript report={report} />}
+          {activeTab === 'timeline' && <EventTimeline testRun={testRun} loading={detailsLoading} />}
+          {activeTab === 'transcript' && <ConversationTranscript report={report} conversation={conversation} loading={detailsLoading} />}
           {activeTab === 'json' && (
             <pre
               className="rounded-xl border p-4 text-xs font-mono overflow-x-auto text-[var(--text-primary)]"

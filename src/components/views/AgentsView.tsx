@@ -6,12 +6,14 @@ import { novoraApi } from '@/lib/api';
 import { AgentCard } from '../agents/AgentCard';
 import { CreateAgentModal } from '../agents/CreateAgentModal';
 import { AgentDetailModal } from '../agents/AgentDetailModal';
+import { EditAgentModal } from '../agents/EditAgentModal';
 import { Bot, Plus, Search, Filter, Server, Mic, Play, Sparkles } from 'lucide-react';
 
 interface AgentsViewProps {
   agents: VoiceAgent[];
   evaluations: EvaluationReport[];
-  onAddAgent: (agent: VoiceAgent) => void;
+  onAddAgent: (agent: VoiceAgent) => Promise<void>;
+  onUpdateAgent: (agent: VoiceAgent) => Promise<void>;
   onRunTest: (agent: VoiceAgent) => void;
   onOpenEvaluationDetail: (evalReport: EvaluationReport) => void;
   onSelectInfrastructureProvider?: (provider: 'vapi' | 'retell') => void;
@@ -21,6 +23,7 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
   agents,
   evaluations,
   onAddAgent,
+  onUpdateAgent,
   onRunTest,
   onOpenEvaluationDetail,
   onSelectInfrastructureProvider,
@@ -30,6 +33,7 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createDefaultProvider, setCreateDefaultProvider] = useState<'elevenlabs' | 'assemblyai' | 'vapi' | 'retell'>('elevenlabs');
   const [selectedAgent, setSelectedAgent] = useState<VoiceAgent | null>(null);
+  const [editingAgent, setEditingAgent] = useState<VoiceAgent | null>(null);
   const [latestEvaluationByAgent, setLatestEvaluationByAgent] = useState<Record<string, EvaluationReport>>({});
 
   useEffect(() => {
@@ -161,6 +165,7 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
                     recent_evaluation_id: latestEvaluationByAgent[agent.id]?.id,
                   }}
                   onSelectAgent={setSelectedAgent}
+                  onEditAgent={setEditingAgent}
                   onRunTest={onRunTest}
                 />
               ))}
@@ -241,6 +246,7 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
                     recent_evaluation_id: latestEvaluationByAgent[agent.id]?.id,
                   }}
                   onSelectAgent={setSelectedAgent}
+                  onEditAgent={setEditingAgent}
                   onRunTest={onRunTest}
                 />
               ))}
@@ -260,7 +266,19 @@ export const AgentsView: React.FC<AgentsViewProps> = ({
         evaluations={[...evaluations, ...Object.values(latestEvaluationByAgent)]}
         onClose={() => setSelectedAgent(null)}
         onRunTest={onRunTest}
+        onEditAgent={(agent) => {
+          setSelectedAgent(null);
+          setEditingAgent(agent);
+        }}
         onOpenEvaluationDetail={onOpenEvaluationDetail}
+      />
+      <EditAgentModal
+        agent={editingAgent}
+        onClose={() => setEditingAgent(null)}
+        onSave={async (updatedAgent) => {
+          await onUpdateAgent(updatedAgent);
+          setEditingAgent(null);
+        }}
       />
     </div>
   );

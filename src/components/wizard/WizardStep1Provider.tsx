@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { assetPath } from '@/lib/assetPath';
 import { VoiceProvider } from '@/types/api';
 import { ProviderManifest } from '@/types/execution';
 import { CheckCircle2, AlertCircle, Wifi, WifiOff, Server, Mic } from 'lucide-react';
@@ -89,7 +90,7 @@ export const WizardStep1Provider: React.FC<WizardStep1ProviderProps> = ({
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2.5">
             <div className="relative h-9 w-9 rounded-xl border p-1" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-surface)' }}>
-              <Image src={prov.logo} alt={prov.name} width={32} height={32} className="object-contain" />
+              <Image src={assetPath(prov.logo)} alt={prov.name} width={32} height={32} className="object-contain" />
             </div>
             <div>
               <h4 className="text-xs font-bold text-[var(--text-primary)]">{prov.name}</h4>

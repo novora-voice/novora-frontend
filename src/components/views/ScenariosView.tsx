@@ -7,6 +7,7 @@ import { ScenarioCriteriaModal } from '../scenarios/ScenarioCriteriaModal';
 import { ScenarioTemplateBar } from '../scenarios/ScenarioTemplateBar';
 import { EditScenarioModal } from '../scenarios/EditScenarioModal';
 import { ScenarioTemplate } from '@/lib/scenarioTemplates';
+import { novoraApi } from '@/lib/api';
 import { FlaskConical, Plus, Search } from 'lucide-react';
 
 interface ScenariosViewProps {
@@ -137,8 +138,14 @@ export const ScenariosView: React.FC<ScenariosViewProps> = ({
         scenario={editingScenario}
         isOpen={Boolean(editingScenario)}
         onClose={() => setEditingScenario(null)}
-        onSave={(updated) => {
-          onUpdateScenario?.(updated);
+        onSave={async (updated) => {
+          const saved = await novoraApi.updateScenario(updated.id, {
+            name: updated.name,
+            business_goal: updated.business_goal,
+            success_criteria: updated.success_criteria,
+            rules: updated.rules,
+          });
+          onUpdateScenario?.(saved);
           setEditingScenario(null);
         }}
       />

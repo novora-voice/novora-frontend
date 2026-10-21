@@ -6,13 +6,15 @@ import { SCENARIO_TEMPLATES, ScenarioTemplate } from '@/lib/scenarioTemplates';
 import { buildScenarioRules } from '@/lib/scenarioRules';
 import { novoraApi } from '@/lib/api';
 import { RuleFormSection } from '../scenarios/RuleFormSection';
-import { FlaskConical, CheckCircle2, Sparkles, Plus, Loader2, Search, AlertCircle, Eye } from 'lucide-react';
+import { EditScenarioModal } from '../scenarios/EditScenarioModal';
+import { FlaskConical, CheckCircle2, Sparkles, Plus, Loader2, Search, AlertCircle, Eye, Pencil } from 'lucide-react';
 
 interface WizardStep3ScenarioProps {
   scenarios: EvaluationScenario[];
   selectedScenarioId: string;
   onSelectScenario: (scenario: EvaluationScenario | ScenarioTemplate) => void;
   onScenarioCreated?: (scenario: EvaluationScenario) => void;
+  onScenarioUpdated?: (scenario: EvaluationScenario) => void;
 }
 
 export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
@@ -20,6 +22,7 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
   selectedScenarioId,
   onSelectScenario,
   onScenarioCreated,
+  onScenarioUpdated,
 }) => {
   const [search, setSearch] = useState('');
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -34,6 +37,7 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [showSelectedDetails, setShowSelectedDetails] = useState(false);
+  const [editingScenario, setEditingScenario] = useState<EvaluationScenario | null>(null);
 
   const filteredScenarios = scenarios.filter(
     (s) =>
@@ -304,7 +308,21 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
                     <p className="text-[10px] text-[var(--text-muted)] truncate mt-0.5">{scen.business_goal}</p>
                     <span className="text-[9px] font-mono text-[var(--text-muted)]">ID: {scen.id}</span>
                   </div>
-                  {isSelected && <CheckCircle2 size={16} className="text-[var(--primary)] shrink-0 ml-2" />}
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Edit scenario ${scen.name}`}
+                      title="Edit scenario"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setEditingScenario(scen);
+                      }}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--primary)]"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    {isSelected && <CheckCircle2 size={16} className="text-[var(--primary)]" />}
+                  </div>
                 </div>
               );
             })}
@@ -409,6 +427,23 @@ export const WizardStep3Scenario: React.FC<WizardStep3ScenarioProps> = ({
           )}
         </div>
       )}
+
+      <EditScenarioModal
+        scenario={editingScenario}
+        isOpen={Boolean(editingScenario)}
+        onClose={() => setEditingScenario(null)}
+        onSave={async (updated) => {
+          const saved = await novoraApi.updateScenario(updated.id, {
+            name: updated.name,
+            business_goal: updated.business_goal,
+            success_criteria: updated.success_criteria,
+            rules: updated.rules,
+          });
+          onScenarioUpdated?.(saved);
+          if (selectedScenarioId === saved.id) selectScenario(saved);
+          setEditingScenario(null);
+        }}
+      />
     </div>
   );
 };

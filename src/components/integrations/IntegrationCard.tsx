@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { assetPath } from '@/lib/assetPath';
 import { CheckCircle2, AlertCircle, Clock, Settings, Play } from 'lucide-react';
 
 export interface IntegrationItem {
@@ -61,7 +62,7 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
                 backgroundColor: 'var(--bg-elevated)',
               }}
             >
-              <Image src={item.logo} alt={item.name} width={38} height={38} className="object-contain" />
+              <Image src={assetPath(item.logo)} alt={item.name} width={38} height={38} className="object-contain" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-[var(--text-primary)]">{item.name}</h3>

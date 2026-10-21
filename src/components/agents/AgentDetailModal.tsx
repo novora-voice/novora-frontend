@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { VoiceAgent, EvaluationReport } from '@/types/api';
-import { X, Bot, Play, ExternalLink, Code2, ShieldCheck, Clock } from 'lucide-react';
+import { X, Bot, Play, ExternalLink, Code2, ShieldCheck, Pencil } from 'lucide-react';
 import { StatusBadge } from '../evaluations/StatusBadge';
 
 interface AgentDetailModalProps {
@@ -10,6 +10,7 @@ interface AgentDetailModalProps {
   evaluations: EvaluationReport[];
   onClose: () => void;
   onRunTest: (agent: VoiceAgent) => void;
+  onEditAgent: (agent: VoiceAgent) => void;
   onOpenEvaluationDetail: (evalReport: EvaluationReport) => void;
 }
 
@@ -18,6 +19,7 @@ export const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
   evaluations,
   onClose,
   onRunTest,
+  onEditAgent,
   onOpenEvaluationDetail,
 }) => {
   if (!agent) return null;
@@ -53,9 +55,14 @@ export const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
               <span className="text-xs text-[var(--text-muted)] font-mono">ID: {agent.id} • {agent.provider.toUpperCase()}</span>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]" aria-label="Close">
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => onEditAgent(agent)} className="rounded-lg p-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--primary)]" aria-label="Edit agent" title="Edit agent">
+              <Pencil size={16} />
+            </button>
+            <button onClick={onClose} className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]" aria-label="Close">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-5">

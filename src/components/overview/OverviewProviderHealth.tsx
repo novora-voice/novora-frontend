@@ -3,6 +3,7 @@
 import React from 'react';
 import { Puzzle, CheckCircle2, AlertTriangle, ArrowUpRight } from 'lucide-react';
 import Image from 'next/image';
+import { assetPath } from '@/lib/assetPath';
 
 interface OverviewProviderHealthProps {
   onNavigateToIntegrations: () => void;
@@ -97,7 +98,7 @@ export const OverviewProviderHealth: React.FC<OverviewProviderHealthProps> = ({
             >
               <div className="flex items-center gap-2.5 mb-2">
                 <div className="relative h-6 w-6 shrink-0 rounded-md overflow-hidden bg-white/5 flex items-center justify-center border border-[var(--border-color)]">
-                  <Image src={p.logo} alt={p.name} width={18} height={18} className="object-contain" />
+                  <Image src={assetPath(p.logo)} alt={p.name} width={18} height={18} className="object-contain" />
                 </div>
                 <div className="min-w-0">
                   <span className="text-xs font-bold text-[var(--text-primary)] block truncate">

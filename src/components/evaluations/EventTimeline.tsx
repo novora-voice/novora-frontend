@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { EvaluationReport } from '@/types/api';
+import { TestRun } from '@/types/execution';
 import {
   User,
   Bot,
@@ -35,85 +35,33 @@ export interface TimelineEvent {
 }
 
 interface EventTimelineProps {
-  report: EvaluationReport;
+  testRun: TestRun | null;
+  loading: boolean;
 }
 
-export const EventTimeline: React.FC<EventTimelineProps> = ({ report }) => {
-  // Generate observable events from rule results and conversation citations
-  const events: TimelineEvent[] = [
-    {
-      id: 'evt_01',
-      type: 'user_message',
-      timestamp: '00:02',
-      title: 'Caller Utterance',
-      description: 'Customer greeted agent and asked for order assistance with ID #9821.',
-    },
-    {
-      id: 'evt_02',
-      type: 'agent_response',
-      timestamp: '00:04',
-      title: 'Agent Utterance',
-      description: 'Agent acknowledged caller greeting and prompted for issue details.',
-    },
-    {
-      id: 'evt_03',
-      type: 'tool_call',
-      timestamp: '00:07',
-      title: 'Tool Call: lookup_order',
-      description: 'Invoked lookup_order with sanitized parameters.',
-      payload: { order_id: '#9821', auth_token: '[REDACTED]' },
-      verified: true,
-    },
-    {
-      id: 'evt_04',
-      type: 'tool_result',
-      timestamp: '00:08',
-      title: 'Tool Outcome: lookup_order',
-      description: 'Order found (status: delayed, discretionary_cap: $50.00).',
-      verified: true,
-    },
-  ];
-
-  // If there are unverified claims in report
-  const hasUnverified = report.rule_results?.some(
-    (r) => r.rule_type === 'unsupported_completion' && r.status !== 'PASS'
-  );
-
-  if (hasUnverified) {
-    events.push({
-      id: 'evt_05',
-      type: 'tool_result',
-      timestamp: '00:14',
-      title: 'Unverified Claim: process_refund',
-      description: 'Agent promised $120 immediate refund, but no payment gateway authorization was issued.',
-      verified: false,
-    });
-    events.push({
-      id: 'evt_06',
-      type: 'guardrail',
-      timestamp: '00:15',
-      title: 'Policy Ceiling Triggered',
-      description: 'Discretionary ceiling ($50.00) breached by unauthorized promise.',
-      verified: true,
-    });
-  } else {
-    events.push({
-      id: 'evt_05',
-      type: 'tool_result',
-      timestamp: '00:12',
-      title: 'Trusted Action: process_credit',
-      description: 'Courtesy credit ($40.00) verified and authorized within policy limits.',
-      verified: true,
-    });
-  }
-
-  events.push({
-    id: 'evt_final',
-    type: 'evaluation_event',
-    timestamp: '00:18',
-    title: `Evaluation Finished (${report.overall_status})`,
-    description: report.summary,
-    verified: report.overall_status === 'PASS',
+export const EventTimeline: React.FC<EventTimelineProps> = ({ testRun, loading }) => {
+  const events: TimelineEvent[] = (testRun?.events ?? []).map((event) => {
+    const payload = event.payload ?? {};
+    const kind = event.event_type.toLowerCase();
+    const rawType = kind.includes('user') || kind.includes('transcript') ? 'user_message'
+      : kind.includes('agent') || kind.includes('response') ? 'agent_response'
+      : kind.includes('tool') && (kind.includes('result') || kind.includes('outcome')) ? 'tool_result'
+      : kind.includes('tool') ? 'tool_call'
+      : kind.includes('guardrail') ? 'guardrail'
+      : kind.includes('error') ? 'provider_error'
+      : 'evaluation_event';
+    const name = String(payload.tool_name ?? payload.name ?? '');
+    const content = String(payload.message ?? payload.text ?? payload.agent_response ?? payload.result ?? '');
+    const title = name ? `${rawType === 'tool_result' ? 'Tool result' : 'Tool call'}: ${name}`
+      : kind.replace(/[._-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+    return {
+      id: event.id,
+      type: rawType as TimelineEventType,
+      timestamp: new Date(event.timestamp).toLocaleTimeString(),
+      title,
+      description: content || `Provider event: ${event.event_type}`,
+      payload,
+    };
   });
 
   const getEventBadge = (type: TimelineEventType, verified?: boolean) => {
@@ -142,11 +90,15 @@ export const EventTimeline: React.FC<EventTimelineProps> = ({ report }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-        <span>Observable Event Stream (Deterministic Telemetry)</span>
-        <span className="font-mono">Total Events: {events.length}</span>
+        <span>Provider Event Stream</span>
+        <span className="font-mono">{events.length} captured events</span>
       </div>
 
-      <div className="relative border-l-2 ml-4 pl-6 space-y-6" style={{ borderColor: 'var(--border-color)' }}>
+      {loading && <p className="text-xs text-[var(--text-muted)]">Loading events from the saved test run…</p>}
+      {!loading && !testRun && <p className="rounded-xl border p-4 text-xs text-[var(--text-muted)]" style={{ borderColor: 'var(--border-color)' }}>No provider test run is linked to this evaluation, so provider events are unavailable.</p>}
+      {!loading && testRun?.status === 'FAILED' && <p className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 text-xs text-rose-600">Provider run failed: {testRun.error_message || 'No error details were recorded.'}</p>}
+
+      {events.length > 0 && <div className="relative border-l-2 ml-4 pl-6 space-y-6" style={{ borderColor: 'var(--border-color)' }}>
         {events.map((ev) => {
           const badge = getEventBadge(ev.type, ev.verified);
           const IconComponent = badge.icon;
@@ -194,7 +146,7 @@ export const EventTimeline: React.FC<EventTimelineProps> = ({ report }) => {
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 };

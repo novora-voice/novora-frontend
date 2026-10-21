@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { assetPath } from '@/lib/assetPath';
 import { useTheme } from '@/context/ThemeContext';
 import {
   LayoutDashboard,
@@ -88,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex h-16 items-center justify-between border-b px-5" style={{ borderColor: 'var(--border-color)' }}>
           <div className="relative h-9 w-32">
             <Image
-              src={theme === 'dark' ? '/novora-logo-dark.png' : '/novora-logo-light.png'}
+              src={assetPath(theme === 'dark' ? '/novora-logo-dark.png' : '/novora-logo-light.png')}
               alt="Novora Logo"
               fill
               priority

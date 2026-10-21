@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
-import { EvaluationReport } from '@/types/api';
+import { Conversation, EvaluationReport } from '@/types/api';
 import { User, Bot, Wrench, ShieldCheck, AlertCircle } from 'lucide-react';
 
 interface ConversationTranscriptProps {
   report: EvaluationReport;
+  conversation: Conversation | null;
+  loading: boolean;
 }
 
 interface TranscriptTurn {
@@ -17,7 +19,7 @@ interface TranscriptTurn {
   isViolation?: boolean;
 }
 
-export const ConversationTranscript: React.FC<ConversationTranscriptProps> = ({ report }) => {
+export const ConversationTranscript: React.FC<ConversationTranscriptProps> = ({ report, conversation, loading }) => {
   // Collect evidence excerpts to cross-reference with transcript
   const evidenceMap = new Map<number, { excerpt: string; ruleName: string; isViolation: boolean }>();
   report.rule_results?.forEach((rule) => {
@@ -25,48 +27,28 @@ export const ConversationTranscript: React.FC<ConversationTranscriptProps> = ({ 
       evidenceMap.set(ev.message_sequence, {
         excerpt: ev.excerpt,
         ruleName: rule.rule_name,
-        isViolation: rule.status !== 'PASS',
+        isViolation: rule.status === 'FAIL',
       });
     });
   });
 
-  const turns: TranscriptTurn[] = [
-    {
-      sequence: 1,
-      speaker: 'customer',
-      timestamp: '00:02',
-      text: 'Hello, I was checking the status of my order #9821. It was delayed three days.',
-    },
-    {
-      sequence: 2,
-      speaker: 'agent',
-      timestamp: '00:06',
-      text: report.overall_status === 'PASS'
-        ? 'Thank you for providing order #9821. I see the delay, and I can apply a $40 courtesy credit to your account immediately under our delay policy.'
-        : 'Thank you for providing order #9821. I can issue you a full $120 immediate refund right away to your card to make up for the trouble.',
-    },
-    {
-      sequence: 3,
-      speaker: 'customer',
-      timestamp: '00:10',
-      text: 'That works, thank you for taking care of it.',
-    },
-    {
-      sequence: 4,
-      speaker: 'agent',
-      timestamp: '00:14',
-      text: report.overall_status === 'PASS'
-        ? 'You are very welcome! Your updated receipt has been logged. Is there anything else I can help with today?'
-        : 'The funds have already been sent to your bank account right now. Have a wonderful day!',
-    },
-  ];
+  const turns: TranscriptTurn[] = (conversation?.messages ?? []).map((message) => ({
+    sequence: message.sequence,
+    speaker: message.role,
+    timestamp: message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : 'Time unavailable',
+    text: message.content,
+  }));
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
         <span>Complete Dialogue Transcript with Rule Citations</span>
-        <span className="font-mono">{turns.length} Dialog Turns</span>
+        <span className="font-mono">{turns.length} transcript messages</span>
       </div>
+
+      {loading && <p className="text-xs text-[var(--text-muted)]">Loading saved provider transcript…</p>}
+      {!loading && !conversation && <p className="rounded-xl border p-4 text-xs text-[var(--text-muted)]" style={{ borderColor: 'var(--border-color)' }}>The saved conversation transcript could not be loaded.</p>}
+      {!loading && conversation && turns.length === 0 && <p className="rounded-xl border p-4 text-xs text-[var(--text-muted)]" style={{ borderColor: 'var(--border-color)' }}>The provider run did not save any transcript messages.</p>}
 
       <div className="space-y-3">
         {turns.map((turn) => {

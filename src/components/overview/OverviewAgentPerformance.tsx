@@ -4,6 +4,7 @@ import React from 'react';
 import { VoiceAgent, EvaluationReport } from '@/types/api';
 import { Bot, CheckCircle2, XCircle, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
+import { assetPath } from '@/lib/assetPath';
 
 interface OverviewAgentPerformanceProps {
   agents: VoiceAgent[];
@@ -71,7 +72,7 @@ export const OverviewAgentPerformance: React.FC<OverviewAgentPerformanceProps> =
                 <div className="relative h-7 w-7 shrink-0 rounded-lg overflow-hidden border border-[var(--border-color)] bg-white/5 flex items-center justify-center">
                   {PROVIDER_LOGOS[agent.provider] ? (
                     <Image
-                      src={PROVIDER_LOGOS[agent.provider]}
+                      src={assetPath(PROVIDER_LOGOS[agent.provider])}
                       alt={agent.provider}
                       width={20}
                       height={20}
