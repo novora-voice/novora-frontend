@@ -97,8 +97,6 @@ node --test tests/e2e.test.mjs
 
 Set NOVORA_API_BASE_URL if the backend is not listening at http://127.0.0.1:8000.
 
-## Render Docker deployment
-
-Create a Render Web Service from this repository with the Docker runtime and root Dockerfile. Set NEXT_PUBLIC_API_URL to the deployed backend's public HTTPS origin before the Docker build. The container listens on 0.0.0.0 at Render's PORT, default 10000.
+## Vercel Docker deployment
 
 Deploy the API separately with PostgreSQL and Redis-compatible Key Value. The dashboard's API proxy needs a reachable backend URL; provider webhooks need the backend URL directly. Do not put secrets in NEXT_PUBLIC_* variables because Next.js exposes those values to the browser.
