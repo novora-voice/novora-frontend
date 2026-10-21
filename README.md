@@ -38,7 +38,7 @@ This frontend application is built to provide a desktop-first, highly responsive
 
 ---
 
-## 🎨 Design Identity & Brand Tokens
+## Design Identity & Brand Tokens
 
 The dashboard implements Novora's official design system:
 
