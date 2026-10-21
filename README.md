@@ -87,11 +87,12 @@ The backend returns a short-lived bearer token after signup or login. The fronte
 
 ## Knowledge Base page
 
+The Knowledge Base page is planned Phase Two work. It does not currently upload, index, or retrieve customer documents, and it does not affect evaluation verdicts. Phase Two is expected to add authorized read-only knowledge sources, retrieval-grounded checks against approved policies and facts, and source/version references in evaluation reports.
+
 ## Planned frontend roadmap
 
 These are roadmap concepts shown in the dashboard, not current end-to-end workflows. No release date is committed.
 
-- **Knowledge sources:** The Knowledge page is a roadmap screen. It does not upload, index, or retrieve customer documents and does not affect evaluation verdicts. Planned work includes authorized read-only sources, retrieval-grounded checks against approved policies and facts, and source/version references in reports.
 - **Managed Voxia runtime:** A future dashboard path for configuring and operating Novora's managed voice runtime, including live streaming and interruption handling. Today, Novora evaluates agents hosted by external providers.
 - **LangGraph workflows:** Planned stateful and branching orchestration for richer multi-turn or multi-agent evaluation flows.
 - **Organizations and RBAC:** Planned organization scopes, role-based permissions, and associated access governance.
