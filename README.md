@@ -2,6 +2,8 @@
 
 The frontend is the Next.js dashboard for creating and running voice-agent evaluations, reviewing evidence, and comparing results. It is a separate repository and deployable service from the FastAPI backend.
 
+Novora helps teams check whether voice agents follow configured business workflows and policies, then inspect transcript evidence for each result. The dashboard is the operator-facing part of a provider-neutral evaluation system; provider session execution, ingestion, and verdict generation happen in the backend. See the [recruiter-facing project overview](../PROJECT_OVERVIEW.md) for the complete product description, architecture flowcharts, and planned Phase Two work.
+
 ## Dashboard architecture
 
 ```mermaid
@@ -25,8 +27,10 @@ The browser sends API requests to the dashboard's same origin. Next.js rewrites 
 - Configure supported voice-agent providers and agents.
 - Define scenarios, criteria, and test inputs.
 - Run evaluations and inspect status, transcript evidence, rule outcomes, and integrity details.
+- Review message-level evidence behind deterministic results and optional LLM-judge criteria; ambiguous or missing evidence is surfaced instead of presented as a pass.
 - View run history and compare baseline and candidate evaluations.
 - Configure supported integrations and inspect platform health.
+- Configure developer-owned HTTP tool endpoints and inspect their actual provider-shaped request results where supported.
 - Light and dark themes.
 
 The dashboard no longer fills a disconnected session with a fake user or demo evaluation records. When authentication cannot be verified, it reports the issue and directs the user to sign in.
@@ -37,7 +41,7 @@ The backend returns a short-lived bearer token after signup or login. The fronte
 
 ## Knowledge Base page
 
-The Knowledge Base page is a Phase Two roadmap screen. It does not currently upload, index, or retrieve customer documents, and it does not affect evaluation verdicts. See the root [project overview](../README.md) for the Phase Two scope.
+The Knowledge Base page is a Phase Two roadmap screen. It does not currently upload, index, or retrieve customer documents, and it does not affect evaluation verdicts. See the [project overview](../PROJECT_OVERVIEW.md) for the Phase Two scope, including authorized read-only knowledge sources, retrieval-grounded checks, and source/version traceability. The frontend roadmap also lists the managed Voxia runtime, LangGraph orchestration, and organization access controls/RBAC. These are planned capabilities, not current dashboard workflows; no release date is committed.
 
 ## Local setup
 
