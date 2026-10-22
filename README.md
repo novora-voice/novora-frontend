@@ -1,4 +1,4 @@
-# Novora — Voice AI Evaluation & Regression Monitoring
+# Novora Voice AI Evaluation & Regression Monitoring
 
 Novora is an evaluation and regression-monitoring platform for conversational AI voice agents. It helps teams test agent behavior against business scenarios, evaluate policy compliance, inspect transcript evidence, and compare baseline and candidate runs to identify regressions.
 
