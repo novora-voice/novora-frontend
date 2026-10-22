@@ -55,13 +55,13 @@ The dashboard implements Novora's official design system:
 | **Warning Status** | `#B45309` (`#FEF3C7` bg) | `#F59E0B` (`rgba(245,158,11,0.15)` bg) |
 | **Error Status** | `#DC2626` (`#FEE2E2` bg) | `#EF4444` (`rgba(239,68,68,0.15)` bg) |
 
-### 🖼️ Dynamic Brand Logo
+### Dynamic Brand Logo
 - **Light Theme**: `public/novora-logo-light.png` (Hexagonal N icon with dark navy brand typography).
 - **Dark Theme**: `public/novora-logo-dark.png` (Hexagonal N icon with white brand typography on midnight background).
 
 ---
 
-## 🚀 Key Modules & Capabilities
+## Key Modules & Capabilities
 
 The browser sends API requests to the dashboard's same origin. Next.js rewrites the /api/backend path to the backend configured by NEXT_PUBLIC_API_URL; this keeps normal dashboard API calls away from browser cross-origin requests. Webhook addresses displayed for provider setup point directly to the backend.
 
