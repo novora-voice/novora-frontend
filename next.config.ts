@@ -15,8 +15,8 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BASE_PATH: basePath,
     NEXT_PUBLIC_GITHUB_PAGES: String(isGitHubPages),
   },
-  cacheComponents: !isGitHubPages,
-  partialPrefetching: !isGitHubPages,
+  cacheComponents: false,
+  partialPrefetching: false,
   ...(!isGitHubPages ? {
     async rewrites() {
       const backendUrl = (
