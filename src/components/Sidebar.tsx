@@ -24,6 +24,7 @@ import { PlannedFeatureType } from './common/PlannedFeatureModal';
 
 export type ActiveTab =
   | 'overview'
+  | 'voxia'
   | 'agents'
   | 'evaluations'
   | 'scenarios'
@@ -42,6 +43,7 @@ interface SidebarProps {
 
 const NAV_ITEMS: { id: ActiveTab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'voxia', label: 'Voxia Voice', icon: Sparkles },
   { id: 'agents', label: 'Agents', icon: Bot },
   { id: 'evaluations', label: 'Evaluations', icon: ClipboardCheck },
   { id: 'scenarios', label: 'Scenarios', icon: FlaskConical },

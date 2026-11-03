@@ -11,6 +11,7 @@ import { ScenariosView } from '@/components/views/ScenariosView';
 import { IntegrationsView } from '@/components/views/IntegrationsView';
 import { KnowledgeView } from '@/components/views/KnowledgeView';
 import { SettingsView } from '@/components/views/SettingsView';
+import { VoxiaView } from '@/components/views/VoxiaView';
 import { AuthUser, EvaluationReport, EvaluationScenario, VoiceAgent, VoiceProvider } from '@/types/api';
 import { ApiError, novoraApi } from '@/lib/api';
 import { clearToken, getToken } from '@/lib/apiClient';
@@ -167,6 +168,27 @@ export default function DashboardPage() {
                 onNavigateTab={setActiveTab}
                 onOpenCompare={() => setIsCompareOpen(true)}
                 onRunScenario={(id) => { setInitialScenarioId(id); setIsWizardOpen(true); }}
+              />
+            )}
+            {activeTab === 'voxia' && (
+              <VoxiaView
+                scenarios={scenarios}
+                agents={agents}
+                onEvaluateConversation={async (convId, scenId) => {
+                  try {
+                    const conversation = await novoraApi.getConversation(convId);
+                    const evalReport = await novoraApi.evaluateConversation({
+                      conversation,
+                      scenario_id: scenId || scenarios[0]?.id || '',
+                    });
+                    setEvaluations((prev) => [evalReport, ...prev]);
+                    setSelectedEvaluation(evalReport);
+                    showToast(`Evaluation complete: ${evalReport.overall_status}`, 'success');
+                  } catch (err: unknown) {
+                    showToast(`Evaluation failed: ${err instanceof Error ? err.message : 'Unknown'}`, 'error');
+                  }
+                }}
+                onToast={showToast}
               />
             )}
             {activeTab === 'agents' && (
