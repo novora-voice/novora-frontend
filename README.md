@@ -77,9 +77,16 @@ The browser sends API requests to the dashboard's same origin. Next.js rewrites 
 - Configure developer-owned HTTP tool endpoints and inspect their actual provider-shaped request results where supported.
 - Run individual or batch evaluations, follow asynchronous job status, and inspect saved outcomes after completion.
 - Use scenario templates and configurable criteria to express workflow, policy, and tool-use expectations.
+- Use the Voxia Voice Runtime view to start a managed session, submit text or recorded microphone turns, hear synthesized responses, inspect session events, and save the conversation for Novora evaluation.
 - Light and dark themes.
 
 The dashboard no longer fills a disconnected session with a fake user or demo evaluation records. When authentication cannot be verified, it reports the issue and directs the user to sign in.
+
+## Voxia Voice Runtime
+
+The Voxia view connects to the backend's `/api/v1/voxia` endpoints. Operators can select a scenario and agent, start and end a session, send text or recorded audio turns, view the transcript, and play generated audio. Ending a session can save it as a Novora conversation and pass it to the existing evaluation flow.
+
+Speech recognition, language generation, and speech synthesis use remote Hugging Face inference configured on the backend. The browser does not receive the Hugging Face token or call Hugging Face directly. Audio is submitted as turns; this UI is not a continuous live-streaming call interface. Active sessions are held in backend process memory, so they do not survive a backend restart or span multiple backend instances.
 
 ## Authentication tradeoff
 
@@ -93,8 +100,6 @@ The Knowledge Base page is planned Phase Two work. It does not currently upload,
 
 These are roadmap concepts shown in the dashboard, not current end-to-end workflows. No release date is committed.
 
-- **Managed Voxia runtime:** A future dashboard path for configuring and operating Novora's managed voice runtime, including live streaming and interruption handling. Today, Novora evaluates agents hosted by external providers.
-- **LangGraph workflows:** Planned stateful and branching orchestration for richer multi-turn or multi-agent evaluation flows.
 - **Organizations and RBAC:** Planned organization scopes, role-based permissions, and associated access governance.
 
 ## Local setup
