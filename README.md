@@ -236,6 +236,18 @@ An individual evaluation tells a team how an agent behaved in one test. Comparin
 
 Novora's dashboard supports baseline/candidate comparisons so teams can inspect how runs differ and identify potential regressions or improvements.
 
+- Sign up, sign in, and check the current account.
+- Configure supported voice-agent providers and agents.
+- Define scenarios, criteria, and test inputs.
+- Run evaluations and inspect status, transcript evidence, rule outcomes, and integrity details.
+- Review message-level evidence behind deterministic results and optional LLM-judge criteria; ambiguous or missing evidence is surfaced instead of presented as a pass.
+- View run history and compare baseline and candidate evaluations.
+- Configure supported integrations and inspect platform health.
+- Configure developer-owned HTTP tool endpoints and inspect their actual provider-shaped request results where supported.
+- Run individual or batch evaluations, follow asynchronous job status, and inspect saved outcomes after completion.
+- Use scenario templates and configurable criteria to express workflow, policy, and tool-use expectations.
+- Use the Voxia Voice Runtime view to start a managed session, submit text or recorded microphone turns, hear synthesized responses, inspect session events, and save the conversation for Novora evaluation.
+- Light and dark themes.
 ```mermaid
 flowchart TD
     BASELINE[Select Baseline Evaluation] --> CANDIDATE[Select Candidate Evaluation]
@@ -245,6 +257,13 @@ flowchart TD
     MATCH --> EVIDENCE[Inspect Transcript Evidence]
     MATCH --> STATUS[Inspect Verdict and Status Changes]
 
+## Voxia Voice Runtime
+
+The Voxia view connects to the backend's `/api/v1/voxia` endpoints. Operators can select a scenario and agent, start and end a session, send text or recorded audio turns, view the transcript, and play generated audio. Ending a session can save it as a Novora conversation and pass it to the existing evaluation flow.
+
+Speech recognition, language generation, and speech synthesis use remote Hugging Face inference configured on the backend. The browser does not receive the Hugging Face token or call Hugging Face directly. Audio is submitted as turns; this UI is not a continuous live-streaming call interface. Active sessions are held in backend process memory, so they do not survive a backend restart or span multiple backend instances.
+
+## Authentication tradeoff
     OUTCOMES --> ANALYSIS[Investigate Behavior Changes]
     EVIDENCE --> ANALYSIS
     STATUS --> ANALYSIS
@@ -316,6 +335,7 @@ The exact data and actions available on each page depend on the backend APIs and
 
 ---
 
+- **Organizations and RBAC:** Planned organization scopes, role-based permissions, and associated access governance.
 ## Technology stack
 
 | Technology / component | Responsibility |
