@@ -3,7 +3,7 @@
 import React from 'react';
 import { EvaluationScenario, VoiceAgent } from '@/types/api';
 import { VoxiaSessionPanel } from '../voxia/VoxiaSessionPanel';
-import { Sparkles, Shield, Cpu, ExternalLink } from 'lucide-react';
+import { Sparkles, Shield } from 'lucide-react';
 
 interface VoxiaViewProps {
   scenarios: EvaluationScenario[];
@@ -24,22 +24,22 @@ export const VoxiaView: React.FC<VoxiaViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-400"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--primary-subtle)] text-[var(--primary)]"
           >
             <Sparkles size={24} />
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
-              Voxia Voice Runtime
+              Continuous Stateful Runtime
             </h2>
             <p className="text-xs text-[var(--text-secondary)]">
-              Remote-inference browser voice agent powered by Hugging Face serverless providers &amp; LangGraph
+              Stateful Voxia conversation loop for live audio, text, and tool interactions
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 font-medium">
+          <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border font-medium" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--status-success-bg)', color: 'var(--status-success)' }}>
             <Shield size={14} /> Zero Local Inference
           </span>
         </div>

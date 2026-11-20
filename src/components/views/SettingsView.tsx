@@ -4,6 +4,7 @@ import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { PlatformHealthCard } from '../settings/PlatformHealthCard';
 import { OperatorEnvChecklist } from '../settings/OperatorEnvChecklist';
+import { OrganizationAccessCard } from '../settings/OrganizationAccessCard';
 import { Settings, Sun, Moon, Shield } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -24,8 +25,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <Settings size={24} />
         </div>
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Platform Settings</h2>
-          <p className="text-xs text-[var(--text-secondary)]">Manage developer configuration, operator checklist, and theme preferences</p>
+          <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">Settings &amp; Access Control</h2>
+          <p className="text-xs text-[var(--text-secondary)]">Manage organization roles, platform health, and visual preferences</p>
         </div>
       </div>
 
@@ -33,6 +34,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         isBackendConnected={isBackendConnected}
         onRefreshHealth={onRefreshHealth}
       />
+
+      <OrganizationAccessCard />
 
       <div className="rounded-2xl border p-5 shadow-sm space-y-3" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}>
         <div className="flex items-center justify-between">

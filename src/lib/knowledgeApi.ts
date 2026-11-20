@@ -12,6 +12,7 @@ export interface OrganizationMember {
   id: string;
   user_id: string;
   email: string;
+  full_name?: string;
   role: 'owner' | 'admin' | 'member' | 'viewer';
   created_at?: string;
 }
@@ -46,7 +47,7 @@ export interface RetrievalEvidence {
   chunk_id: string;
   text: string;
   score: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   source: string;
 }
 
@@ -56,8 +57,8 @@ export interface RetrievalTrace {
   knowledge_base_ids: string[];
   retrieval_mode: string;
   evidence: RetrievalEvidence[];
-  graph_entities: any[];
-  graph_relationships: any[];
+  graph_entities: unknown[];
+  graph_relationships: unknown[];
   latency_ms: number;
 }
 
@@ -109,6 +110,21 @@ export async function addOrgMember(orgId: string, email: string, role: string): 
   return res.json();
 }
 
+export async function updateOrgMemberRole(orgId: string, userId: string, role: string): Promise<OrganizationMember> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/organizations/${encodeURIComponent(orgId)}/members/${encodeURIComponent(userId)}`, {
+    method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ role }),
+  });
+  if (!res.ok) throw new Error(`Failed to update member role: ${res.statusText}`);
+  return res.json();
+}
+
+export async function removeOrgMember(orgId: string, userId: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/organizations/${encodeURIComponent(orgId)}/members/${encodeURIComponent(userId)}`, {
+    method: 'DELETE', headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to remove member: ${res.statusText}`);
+}
+
 // ---------------------------------------------------------------------------
 // Knowledge Base API
 // ---------------------------------------------------------------------------
@@ -126,10 +142,10 @@ export async function createKnowledgeBase(payload: {
   name: string;
   description?: string;
   vector_provider: string;
-  vector_config?: Record<string, any>;
+  vector_config?: Record<string, unknown>;
   collection_name?: string;
   graph_provider?: string;
-  graph_config?: Record<string, any>;
+  graph_config?: Record<string, unknown>;
 }): Promise<KnowledgeBase> {
   const res = await fetch(`${API_BASE_URL}/api/v1/knowledge-bases`, {
     method: 'POST',
@@ -143,8 +159,8 @@ export async function createKnowledgeBase(payload: {
 export async function validateConnection(payload: {
   provider_type: 'vector' | 'graph';
   provider_name: string;
-  config: Record<string, any>;
-}): Promise<{ valid: boolean; message: string; details?: any }> {
+  config: Record<string, unknown>;
+}): Promise<{ valid: boolean; message: string; details?: unknown }> {
   const res = await fetch(`${API_BASE_URL}/api/v1/knowledge-bases/validate-connection`, {
     method: 'POST',
     headers: authHeaders(),

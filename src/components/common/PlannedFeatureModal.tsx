@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { X, Sparkles, Layers, ShieldCheck, ArrowRight } from 'lucide-react';
+import { X, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
 
-export type PlannedFeatureType = 'voxia' | 'langgraph' | 'rbac';
+export type PlannedFeatureType = 'voxia' | 'continuousRuntime' | 'rbac';
 
 interface PlannedFeatureModalProps {
   feature: PlannedFeatureType | null;
@@ -35,31 +35,31 @@ const FEATURE_DETAILS: Record<
     ],
     timeline: 'Targeted for Q2 Platform Rollout',
   },
-  langgraph: {
-    title: 'LangGraph Orchestration Workflows',
-    badge: 'Planned Workflow Engine',
-    icon: Layers,
+  continuousRuntime: {
+    title: 'Continuous Stateful Runtime',
+    badge: 'Active Workflow Engine',
+    icon: Sparkles,
     description:
-      'Novora will integrate cyclical state machine testing powered by LangGraph, enabling multi-agent evaluation simulations.',
+      'Voxia routes each conversation turn through a stateful workflow that retains session context and loops through tool calls until it can respond.',
     details: [
-      'Visual cyclical graph representation of agent turns',
-      'Stateful checkpointing and rollbacks during simulated calls',
-      'Branching scenario test execution',
+      'Conversation state carried across turns',
+      'Tool calls executed as part of the workflow loop',
+      'Audio and text turns share the same stateful orchestration',
     ],
-    timeline: 'Planned in Architecture Roadmap',
+    timeline: 'Active in Voxia sessions',
   },
   rbac: {
     title: 'Multi-Tenant Organizations & RBAC',
-    badge: 'Enterprise Roadmap',
+    badge: 'Active Access Controls',
     icon: ShieldCheck,
     description:
-      'Enterprise role-based access control, tenant isolation, audit logging, and single sign-on (SSO) governance.',
+      'Organization membership and role-based authorization protect organization and knowledge-base operations.',
     details: [
-      'Role hierarchies: Platform Admin, Voice Engineer, QA Reviewer',
-      'Isolated scenario directories and private test suites',
-      'Audit log exports for compliance and telephony recordings',
+      'Owner, admin, member, and viewer roles',
+      'Organization membership controls access to tenant data',
+      'Admin-only membership and role management',
     ],
-    timeline: 'Phase 2 Enterprise Release',
+    timeline: 'Active',
   },
 };
 

@@ -13,7 +13,6 @@ import {
   BookOpen,
   Settings,
   Sparkles,
-  Layers,
   ShieldCheck,
   Wifi,
   WifiOff,
@@ -30,7 +29,8 @@ export type ActiveTab =
   | 'scenarios'
   | 'integrations'
   | 'knowledge'
-  | 'settings';
+  | 'settings'
+  | 'continuousruntime';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -50,6 +50,7 @@ const NAV_ITEMS: { id: ActiveTab; label: string; icon: React.ElementType }[] = [
   { id: 'integrations', label: 'Integrations', icon: Puzzle },
   { id: 'knowledge', label: 'Knowledge', icon: BookOpen },
   { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'continuousruntime', label: 'Stateful Runtime', icon: Sparkles }
 ];
 
 const ROADMAP_ITEMS: {
@@ -58,9 +59,7 @@ const ROADMAP_ITEMS: {
   badge: string;
   icon: React.ElementType;
 }[] = [
-  { feature: 'voxia', label: 'Voxia Runtime', badge: 'Phase 2', icon: Sparkles },
-  { feature: 'langgraph', label: 'LangGraph', badge: 'Planned', icon: Layers },
-  { feature: 'rbac', label: 'RBAC / Org', badge: 'Planned', icon: ShieldCheck },
+  { feature: 'voxia', label: 'Voxia Runtime', badge: 'Phase 2', icon: Sparkles }
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -141,19 +140,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div>
             <div className="mb-2 px-3 text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
-              Roadmap (Phase 2)
+              Workspace tools
             </div>
             <div className="space-y-1">
               {ROADMAP_ITEMS.map((item) => {
                 const Icon = item.icon;
+                const targetTab: ActiveTab | null = item.feature === 'rbac'
+                  ? 'settings'
+                  : item.feature === 'continuousRuntime'
+                    ? 'voxia'
+                    : null;
+                const isActive = targetTab !== null && activeTab === targetTab;
                 return (
                   <button
                     key={item.feature}
-                    onClick={() => onOpenPlannedModal(item.feature)}
-                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] transition-colors text-left"
+                    onClick={() => {
+                      if (targetTab) {
+                        onTabChange(targetTab);
+                        onCloseMobile();
+                      } else {
+                        onOpenPlannedModal(item.feature);
+                      }
+                    }}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors text-left ${isActive ? 'text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]'}`}
+                    style={isActive ? { background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' } : undefined}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon size={16} />
+                      <Icon size={16} className={isActive ? 'text-white' : 'text-[var(--text-muted)]'} />
                       <span>{item.label}</span>
                     </div>
                     <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border" style={{ borderColor: 'var(--border-color)' }}>

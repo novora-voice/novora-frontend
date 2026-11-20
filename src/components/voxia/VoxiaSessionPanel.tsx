@@ -236,9 +236,9 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Remote Inference Badge bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary-subtle)] text-[var(--primary)]">
             <Cpu size={22} />
           </div>
           <div>
@@ -251,9 +251,9 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
               </span>
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              STT: <span className="font-mono text-purple-300">{statusInfo?.stt_model || 'openai/whisper-large-v3'}</span> |
-              LLM: <span className="font-mono text-purple-300">{statusInfo?.llm_model || 'meta-llama/Llama-3.1-8B-Instruct'}</span> |
-              TTS: <span className="font-mono text-purple-300">{statusInfo?.tts_model || 'facebook/mms-tts-eng'}</span>
+              STT: <span className="font-mono text-[var(--text-secondary)]">{statusInfo?.stt_model || 'openai/whisper-large-v3'}</span> |
+              LLM: <span className="font-mono text-[var(--text-secondary)]">{statusInfo?.llm_model || 'meta-llama/Llama-3.1-8B-Instruct'}</span> |
+              TTS: <span className="font-mono text-[var(--text-secondary)]">{statusInfo?.tts_model || 'facebook/mms-tts-eng'}</span>
             </p>
           </div>
         </div>
@@ -277,7 +277,7 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Session Configuration & Tools */}
         <div className="space-y-4">
-          <div className="p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] space-y-4">
+          <div className="p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)] space-y-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
               Session Setup
             </h3>
@@ -290,7 +290,7 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
                 disabled={session?.status === 'active'}
                 value={selectedScenarioId}
                 onChange={(e) => setSelectedScenarioId(e.target.value)}
-                className="w-full text-sm rounded-xl px-3 py-2 border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] disabled:opacity-50"
+                className="w-full text-sm rounded-xl px-3 py-2 border border-[var(--border-color)] bg-[var(--bg-elevated)] text-[var(--text-primary)] disabled:opacity-50"
               >
                 <option value="">None (Standalone Demo)</option>
                 {scenarios.map((s) => (
@@ -309,7 +309,7 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
                 disabled={session?.status === 'active'}
                 value={selectedAgentId}
                 onChange={(e) => setSelectedAgentId(e.target.value)}
-                className="w-full text-sm rounded-xl px-3 py-2 border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] disabled:opacity-50"
+                className="w-full text-sm rounded-xl px-3 py-2 border border-[var(--border-color)] bg-[var(--bg-elevated)] text-[var(--text-primary)] disabled:opacity-50"
               >
                 <option value="">Default Voxia Agent</option>
                 {agents.map((a) => (
@@ -324,7 +324,7 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
               <button
                 onClick={handleStartSession}
                 disabled={isProcessing}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-medium text-sm text-white bg-purple-600 hover:bg-purple-500 transition-all shadow-lg shadow-purple-600/20 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-all shadow-sm disabled:opacity-50"
               >
                 {isProcessing ? <RefreshCw className="animate-spin" size={16} /> : <Sparkles size={16} />}
                 Start Voice Session
@@ -341,18 +341,18 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
             )}
 
             {lastEndedConversationId && (
-              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold text-purple-300">
+              <div className="p-3 rounded-xl bg-[var(--primary-subtle)] border border-[var(--border-color)] space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
                   <CheckCircle2 size={14} />
                   Conversation Ready for Evaluation
                 </div>
                 <p className="text-[11px] text-[var(--text-secondary)]">
-                  Persisted as conversation ID <span className="font-mono text-purple-300">{lastEndedConversationId.slice(0, 12)}</span>
+                  Persisted as conversation ID <span className="font-mono text-[var(--text-secondary)]">{lastEndedConversationId.slice(0, 12)}</span>
                 </p>
                 {onEvaluateConversation && (
                   <button
                     onClick={() => onEvaluateConversation(lastEndedConversationId, selectedScenarioId)}
-                    className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-500"
+                    className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] shadow-sm"
                   >
                     Evaluate with Novora <ArrowRight size={14} />
                   </button>
@@ -362,29 +362,29 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
           </div>
 
           {/* Business Tool Registry Box */}
-          <div className="p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] space-y-3">
+          <div className="p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)] space-y-3">
             <div className="flex items-center gap-2">
               <Wrench size={16} className="text-amber-400" />
               <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-primary)]">
                 Authorized Business Tools
               </h4>
             </div>
-            <div className="p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-1.5">
+            <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)] space-y-1.5">
               <div className="flex items-center justify-between text-xs font-mono text-amber-300">
                 <span>lookup_order</span>
                 <span className="text-[10px] text-zinc-400">order_id: string</span>
               </div>
               <p className="text-[11px] text-[var(--text-secondary)]">
-                Retrieves real order fixture records (e.g. <span className="font-mono text-purple-300">ORD-1001</span>, <span className="font-mono text-purple-300">ORD-1002</span>, <span className="font-mono text-purple-300">ORD-1003</span>).
+                Retrieves real order fixture records (e.g. <span className="font-mono text-[var(--text-primary)]">ORD-1001</span>, <span className="font-mono text-[var(--text-primary)]">ORD-1002</span>, <span className="font-mono text-[var(--text-primary)]">ORD-1003</span>).
               </p>
             </div>
           </div>
         </div>
 
         {/* Middle & Right Column: Interactive Conversation & Audio Controls */}
-        <div className="lg:col-span-2 flex flex-col h-[640px] rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] overflow-hidden">
+        <div className="lg:col-span-2 flex flex-col h-[640px] rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)] overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/50">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-color)] bg-[var(--bg-elevated)]">
             <div className="flex items-center gap-2">
               <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-primary)]">
@@ -392,7 +392,7 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
               </span>
             </div>
             {isProcessing && (
-              <div className="flex items-center gap-1.5 text-xs text-purple-400">
+              <div className="flex items-center gap-1.5 text-xs text-[var(--primary)]">
                 <RefreshCw size={13} className="animate-spin" />
                 <span>Remote Inference Processing...</span>
               </div>
@@ -403,14 +403,14 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
           <div className="flex-1 p-5 overflow-y-auto space-y-4">
             {!session || session.turns.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-400">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--primary-subtle)] text-[var(--primary)]">
                   <Mic size={24} />
                 </div>
                 <h4 className="text-sm font-semibold text-[var(--text-primary)]">
                   Voice Session Ready
                 </h4>
                 <p className="text-xs text-[var(--text-secondary)] max-w-sm">
-                  Start the session and speak into your microphone or type a message. Speech will be transcribed remotely via Whisper, routed through LangGraph, and spoken back via Hugging Face TTS.
+                  Start the session and speak into your microphone or type a message. Speech is transcribed remotely, processed through the continuous stateful conversation runtime, and spoken back via Hugging Face TTS.
                 </p>
               </div>
             ) : (
@@ -422,8 +422,8 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
                   <div
                     className={`max-w-[85%] rounded-2xl p-4 space-y-2 ${
                       turn.role === 'user'
-                        ? 'bg-purple-600 text-white rounded-br-none'
-                        : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-bl-none'
+                        ? 'bg-[var(--primary)] text-white rounded-br-none'
+                        : 'bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-bl-none'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3 text-[11px] opacity-75">
@@ -465,23 +465,23 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
 
           {/* Quick Demo Prompts */}
           {session?.status === 'active' && (
-            <div className="px-5 py-2 flex flex-wrap gap-2 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]/30">
+            <div className="px-5 py-2 flex flex-wrap gap-2 border-t border-[var(--border-color)] bg-[var(--bg-elevated)]">
               <span className="text-[11px] text-[var(--text-secondary)] self-center">Try:</span>
               <button
                 onClick={() => handleSubmitTextTurn('Hi, I need help checking my order.')}
-                className="text-[11px] px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-purple-500"
+                className="text-[11px] px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] hover:border-[var(--primary)]"
               >
                 &ldquo;Hi, check my order&rdquo;
               </button>
               <button
                 onClick={() => handleSubmitTextTurn('My order number is ORD-1001.')}
-                className="text-[11px] px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-purple-500"
+                className="text-[11px] px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] hover:border-[var(--primary)]"
               >
                 &ldquo;Order ORD-1001&rdquo;
               </button>
               <button
                 onClick={() => handleSubmitTextTurn('Thank you, that is all I needed.')}
-                className="text-[11px] px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-purple-500"
+                className="text-[11px] px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] hover:border-[var(--primary)]"
               >
                 &ldquo;Thank you, goodbye&rdquo;
               </button>
@@ -489,14 +489,14 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
           )}
 
           {/* Voice Input & Text Control Bar */}
-          <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]/70 flex items-center gap-3">
+          <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-elevated)] flex items-center gap-3">
             <button
               disabled={!session || session.status !== 'active' || isProcessing}
               onClick={isRecording ? stopRecording : startRecording}
               className={`flex items-center justify-center h-11 w-11 rounded-xl transition-all ${
                 isRecording
                   ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30'
-                  : 'bg-purple-600/10 text-purple-400 hover:bg-purple-600 hover:text-white border border-purple-500/20'
+                  : 'bg-[var(--primary-subtle)] text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white border border-[var(--border-color)]'
               } disabled:opacity-40`}
               title={isRecording ? 'Stop Recording' : 'Speak via Microphone'}
             >
@@ -518,13 +518,13 @@ export const VoxiaSessionPanel: React.FC<VoxiaSessionPanelProps> = ({
                     : 'Type a message or click mic to speak...'
                   : 'Start a session to talk with Voxia'
               }
-              className="flex-1 text-sm rounded-xl px-4 py-2.5 border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:border-purple-500 disabled:opacity-50"
+              className="flex-1 text-sm rounded-xl px-4 py-2.5 border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] disabled:opacity-50"
             />
 
             <button
               disabled={!session || session.status !== 'active' || !inputText.trim() || isProcessing}
               onClick={() => handleSubmitTextTurn()}
-              className="flex items-center justify-center h-11 w-11 rounded-xl bg-purple-600 text-white hover:bg-purple-500 transition-all disabled:opacity-40"
+              className="flex items-center justify-center h-11 w-11 rounded-xl bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] transition-all shadow-sm disabled:opacity-40"
             >
               <Send size={18} />
             </button>

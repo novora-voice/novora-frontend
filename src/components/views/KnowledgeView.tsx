@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   BookOpen,
   Database,
@@ -60,6 +61,9 @@ export const KnowledgeView: React.FC = () => {
   // Status/loading
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => setIsMounted(true), []);
 
   // Load organizations on mount
   useEffect(() => {
@@ -473,13 +477,17 @@ export const KnowledgeView: React.FC = () => {
       </div>
 
       {/* Modal: Create Knowledge Base */}
-      {showCreateKb && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      {isMounted && showCreateKb && createPortal(
+        <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowCreateKb(false); }}>
           <div
-            className="w-full max-w-md rounded-2xl border p-6 shadow-xl space-y-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-knowledge-base-title"
+            className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border p-6 shadow-2xl space-y-4"
             style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
-            <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+            <h3 id="create-knowledge-base-title" className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
               Create Knowledge Base
             </h3>
             <form onSubmit={handleCreateKb} className="space-y-4 text-xs">
@@ -579,17 +587,21 @@ export const KnowledgeView: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>, document.body
       )}
 
       {/* Modal: Upload Document */}
-      {showUploadDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      {isMounted && showUploadDoc && createPortal(
+        <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/55 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowUploadDoc(false); }}>
           <div
-            className="w-full max-w-lg rounded-2xl border p-6 shadow-xl space-y-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upload-knowledge-document-title"
+            className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border p-6 shadow-2xl space-y-4"
             style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-color)' }}
+            onMouseDown={(event) => event.stopPropagation()}
           >
-            <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+            <h3 id="upload-knowledge-document-title" className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
               Upload Knowledge Document
             </h3>
             <form onSubmit={handleUploadDoc} className="space-y-4 text-xs">
@@ -641,7 +653,7 @@ export const KnowledgeView: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>, document.body
       )}
     </div>
   );
