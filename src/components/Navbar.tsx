@@ -32,7 +32,7 @@ const TAB_TITLES: Record<ActiveTab, { title: string; subtitle: string }> = {
   },
   voxia: {
     title: 'Voxia Voice Runtime',
-    subtitle: 'Remote-inference browser voice agent powered by Hugging Face & LangGraph',
+    subtitle: 'Remote voice agent with a continuous stateful conversation runtime',
   },
   agents: {
     title: 'Voice Agents',
