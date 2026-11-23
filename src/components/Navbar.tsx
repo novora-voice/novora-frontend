@@ -34,6 +34,10 @@ const TAB_TITLES: Record<ActiveTab, { title: string; subtitle: string }> = {
     title: 'Voxia Voice Runtime',
     subtitle: 'Remote voice agent with a continuous stateful conversation runtime',
   },
+  continuousruntime: {
+    title: 'Continuous Runtime',
+    subtitle: 'Monitor active voice sessions, stateful memory, and real-time execution',
+  },
   agents: {
     title: 'Voice Agents',
     subtitle: 'Configured provider agents, prompt configurations, and runtime capabilities',
